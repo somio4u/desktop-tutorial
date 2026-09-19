@@ -19,9 +19,17 @@ async function main() {
 
   await writeFile(`${base}.txt`, result.storyText);
   await writeFile(`${base}.${ext}`, result.audio);
+  await Promise.all(
+    result.images.map((img, i) => writeFile(`${base}.image-${i}.${img.extension}`, img.buffer)),
+  );
 
   console.log(`Story text: ${base}.txt`);
   console.log(`Audio (${result.outputFormat}): ${base}.${ext}`);
+  if (result.images.length) {
+    console.log(`Illustrations: ${base}.image-0.${result.images[0].extension} .. (${result.images.length} total)`);
+  } else {
+    console.log('No illustrations (workflow produced no "images" output, or none downloaded successfully).');
+  }
 }
 
 main().catch((err) => {

@@ -1,13 +1,13 @@
 import express from 'express';
 import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { config } from './config.js';
 import { createStory, type CreateStoryOptions } from './pipeline/storyPipeline.js';
 
 const OUTPUT_DIR = path.resolve('output');
 
-const extensionFor = (format: string) => (format.startsWith('pcm') ? 'pcm' : 'mp3');
+const audioExtensionFor = (format: string) => (format.startsWith('pcm') ? 'pcm' : 'mp3');
 
 const app = express();
 app.use(express.json());
@@ -23,14 +23,20 @@ app.post('/api/stories', async (req, res) => {
     const result = await createStory({ prompt, genre, voiceId, outputFormat });
     const id = randomUUID();
     await mkdir(OUTPUT_DIR, { recursive: true });
-    const fileName = `${id}.${extensionFor(result.outputFormat)}`;
-    await writeFile(path.join(OUTPUT_DIR, fileName), result.audio);
+
+    await writeFile(path.join(OUTPUT_DIR, `${id}.audio.${audioExtensionFor(result.outputFormat)}`), result.audio);
+    await Promise.all(
+      result.images.map((img, i) =>
+        writeFile(path.join(OUTPUT_DIR, `${id}.image-${i}.${img.extension}`), img.buffer),
+      ),
+    );
 
     res.json({
       id,
       storyText: result.storyText,
       outputFormat: result.outputFormat,
       audioUrl: `/api/stories/${id}/audio`,
+      imageUrls: result.images.map((_, i) => `/api/stories/${id}/images/${i}`),
     });
   } catch (err) {
     res.status(502).json({ error: (err as Error).message });
@@ -38,10 +44,18 @@ app.post('/api/stories', async (req, res) => {
 });
 
 app.get('/api/stories/:id/audio', async (req, res) => {
-  // Looks up the file by id regardless of extension.
-  const { readdir } = await import('node:fs/promises');
   const files = await readdir(OUTPUT_DIR).catch(() => [] as string[]);
-  const match = files.find((f) => f.startsWith(req.params.id));
+  const match = files.find((f) => f.startsWith(`${req.params.id}.audio.`));
+  if (!match) {
+    res.status(404).json({ error: 'not found' });
+    return;
+  }
+  res.sendFile(path.join(OUTPUT_DIR, match));
+});
+
+app.get('/api/stories/:id/images/:index', async (req, res) => {
+  const files = await readdir(OUTPUT_DIR).catch(() => [] as string[]);
+  const match = files.find((f) => f.startsWith(`${req.params.id}.image-${req.params.index}.`));
   if (!match) {
     res.status(404).json({ error: 'not found' });
     return;
