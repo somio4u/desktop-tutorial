@@ -493,18 +493,20 @@
         return;
       }
 
+      // Apps Script Web App URLs redirect internally, and browsers block
+      // reading that redirected response under normal CORS rules even
+      // though the script runs fine — so this request is sent "no-cors"
+      // (fire-and-forget: the browser can't read the response back, but
+      // the request itself still reaches and runs the script).
       return fetch(CONFIG.SCRIPT_URL, {
         method: 'POST',
+        mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)
-      }).then(function(res){ return res.json(); }).then(function(result){
-        if (result && result.status === 'success'){
-          form.hidden = true;
-          successCard.hidden = false;
-          successCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else {
-          throw new Error((result && result.message) || 'Unknown error');
-        }
+      }).then(function(){
+        form.hidden = true;
+        successCard.hidden = false;
+        successCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     }).catch(function(err){
       setStatus('Something went wrong: ' + err.message + '. Please try again.', 'error');
