@@ -24,6 +24,7 @@ var HEADERS = ['Timestamp', 'Full name', 'Phone', 'Email', 'Age', 'City', 'Exper
 function doPost(e) {
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
+  var result;
   try {
     // The page submits as a real HTML form (a hidden iframe target) rather
     // than fetch(), since Apps Script's redirecting URL gets blocked by
@@ -59,12 +60,21 @@ function doPost(e) {
       photoLinks.join('\n')
     ]);
 
-    return ContentService.createTextOutput(JSON.stringify({ status: 'success' })).setMimeType(ContentService.MimeType.JSON);
+    result = { status: 'success' };
   } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: err.message })).setMimeType(ContentService.MimeType.JSON);
+    result = { status: 'error', message: err.message };
   } finally {
     lock.releaseLock();
   }
+  // The page can't read this response directly (it arrives inside a
+  // cross-origin hidden iframe), so hand the real result back via
+  // postMessage instead of just returning JSON the page can't see —
+  // window.top always reaches the page's actual top-level window, no
+  // matter how many iframes Apps Script itself wraps this response in.
+  var html = '<!DOCTYPE html><html><body><script>' +
+    'window.top.postMessage(' + JSON.stringify({ source: 'tarang-audition-form', result: result }) + ', "*");' +
+    '</script></body></html>';
+  return HtmlService.createHtmlOutput(html);
 }
 
 function ensureHeaders_(sheet) {

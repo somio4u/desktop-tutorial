@@ -420,7 +420,6 @@
   var successCard = document.getElementById('successCard');
   var hiddenGoogleForm = document.getElementById('hiddenGoogleForm');
   var hiddenPayloadField = document.getElementById('hiddenPayloadField');
-  var hiddenSubmitFrame = document.querySelector('iframe[name="hiddenSubmitFrame"]');
 
   var files = []; // { file, id }
   var counter = 0;
@@ -512,20 +511,36 @@
       // fetch(): a plain form submission has been allowed cross-site
       // since long before CORS existed, so it isn't blocked by the
       // browser/extensions/in-app browsers the way fetch()/XHR to Apps
-      // Script's redirecting URL often is ("Failed to fetch"). We can't
-      // read the response back this way, so a completed submission
-      // (iframe load, or a timeout fallback in case load never fires)
-      // is treated as success.
-      return new Promise(function(resolve){
+      // Script's redirecting URL often is ("Failed to fetch"). The iframe
+      // itself can't be read back (cross-origin), so Code.gs posts the
+      // real result back via window.top.postMessage — we wait for that
+      // actual confirmation rather than assuming success once the form
+      // is sent, since a silent server-side failure must surface, not
+      // report a false success to whoever's registering.
+      return new Promise(function(resolve, reject){
         var settled = false;
-        function finish(){
+
+        function onMessage(evt){
+          var data = evt.data;
+          if (!data || data.source !== 'tarang-audition-form') return;
+          settled = true;
+          window.removeEventListener('message', onMessage);
+          clearTimeout(timer);
+          if (data.result && data.result.status === 'success'){
+            resolve();
+          } else {
+            reject(new Error((data.result && data.result.message) || 'The form backend reported an error'));
+          }
+        }
+
+        var timer = setTimeout(function(){
           if (settled) return;
           settled = true;
-          hiddenSubmitFrame.removeEventListener('load', finish);
-          resolve();
-        }
-        hiddenSubmitFrame.addEventListener('load', finish);
-        setTimeout(finish, 4000);
+          window.removeEventListener('message', onMessage);
+          reject(new Error('No confirmation received from Google after 15s — your entry may not have been saved'));
+        }, 15000);
+
+        window.addEventListener('message', onMessage);
 
         hiddenGoogleForm.action = CONFIG.SCRIPT_URL;
         hiddenPayloadField.value = JSON.stringify(payload);
