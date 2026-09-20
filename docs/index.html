@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tarang Plus Audition Registration</title>
+<style>
+  :root{
+    --red:#E2231A;
+    --red-deep:#B71B14;
+    --blue:#114B9B;
+    --gold:#FFC20E;
+    --cream:#FFF8EC;
+    --paper:#FFFFFF;
+    --ink:#201810;
+    --muted:#7A6F63;
+    --line:rgba(32,24,16,0.14);
+    --danger:#C4281C;
+    --ok:#1E8A4C;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--cream);
+    color:var(--ink);
+    font-family:'Work Sans', 'Segoe UI', Arial, sans-serif;
+    padding:0 16px 48px;
+    -webkit-font-smoothing:antialiased;
+  }
+  img{max-width:100%;}
+  h1,h2,h3{font-family:'Archivo', 'Work Sans', sans-serif;}
+  a{color:var(--blue);}
+
+  .wave-band{
+    margin:0 -16px;
+    position:relative;
+    background:var(--red);
+    overflow:hidden;
+    padding-top:env(safe-area-inset-top,0px);
+  }
+  .wave-band::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:
+      radial-gradient(120% 90% at 15% -10%, rgba(255,255,255,0.10), transparent 60%);
+    pointer-events:none;
+  }
+  .wave-shape{
+    position:absolute;
+    left:0; right:0; bottom:-2px;
+    height:46px;
+    display:block;
+  }
+  .band-inner{
+    position:relative;
+    max-width:480px;
+    margin:0 auto;
+    padding:26px 20px 52px;
+    text-align:center;
+  }
+  .logo-disc{
+    width:96px;height:96px;
+    margin:0 auto 14px;
+    border-radius:22px;
+    background:var(--paper);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 10px 24px rgba(0,0,0,0.25);
+  }
+  .logo-disc img{
+    width:80px;height:80px;object-fit:contain;
+  }
+  .eyebrow{
+    color:var(--gold);
+    font-weight:700;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    font-size:12px;
+    margin:0 0 6px;
+  }
+  .band-inner h1{
+    color:#fff;
+    font-size:clamp(24px,7vw,32px);
+    line-height:1.1;
+    margin:0 0 10px;
+    font-weight:800;
+    text-wrap:balance;
+  }
+  .band-inner p.sub{
+    color:#FFE9C7;
+    margin:0 auto;
+    font-size:14.5px;
+    max-width:38ch;
+  }
+
+  main{
+    max-width:480px;
+    margin:-30px auto 0;
+    position:relative;
+    z-index:2;
+  }
+
+  .card{
+    background:var(--paper);
+    border-radius:18px;
+    box-shadow:0 16px 40px rgba(32,24,16,0.14);
+    padding:20px 16px 24px;
+    border:1px solid var(--line);
+  }
+
+  .field{margin-bottom:16px;}
+  .field label{
+    display:block;
+    font-weight:700;
+    font-size:13.5px;
+    margin-bottom:6px;
+    color:var(--ink);
+  }
+  .field .hint{
+    font-weight:400;
+    color:var(--muted);
+    font-size:12.5px;
+  }
+  input[type="text"],
+  input[type="tel"],
+  input[type="email"],
+  input[type="number"],
+  textarea{
+    width:100%;
+    font:inherit;
+    font-size:16px;
+    padding:13px;
+    border-radius:10px;
+    border:1.5px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+    min-height:48px;
+  }
+  input:focus, textarea:focus{
+    outline:none;
+    border-color:var(--blue);
+    box-shadow:0 0 0 3px rgba(17,75,155,0.15);
+  }
+  textarea{min-height:96px;resize:vertical;font-family:inherit;}
+
+  .row2{display:flex;gap:10px;flex-wrap:wrap;}
+  .row2 > .field{flex:1 1 130px;margin-bottom:16px;}
+
+  .photo-section{
+    border-top:1px dashed var(--line);
+    padding-top:16px;
+    margin-top:4px;
+  }
+  .photo-section h3{
+    margin:0 0 4px;
+    font-size:15px;
+  }
+  .photo-section .hint{
+    color:var(--muted);
+    font-size:12.5px;
+    margin:0 0 14px;
+  }
+  .photo-buttons{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .photo-btn{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:9px;
+    padding:14px 10px;
+    min-height:50px;
+    border-radius:12px;
+    border:1.5px solid var(--line);
+    background:var(--cream);
+    color:var(--ink);
+    font-weight:700;
+    font-size:14.5px;
+    font-family:inherit;
+    cursor:pointer;
+    text-align:center;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .photo-btn.primary{
+    background:var(--blue);
+    border-color:var(--blue);
+    color:#fff;
+  }
+  .photo-btn.secondary{
+    background:var(--red);
+    border-color:var(--red);
+    color:#fff;
+  }
+  .photo-btn svg{flex:none;}
+  .photo-btn:active{transform:translateY(1px);}
+
+  /* Visually hidden but still clickable/focusable — display:none can be
+     unreliable for triggering the native file picker on some mobile
+     browsers, so the file inputs stay in the layout, just invisible. */
+  .file-input{
+    position:absolute;
+    width:1px;height:1px;
+    padding:0;margin:-1px;
+    overflow:hidden;
+    clip:rect(0,0,0,0);
+    white-space:nowrap;
+    border:0;
+  }
+
+  .thumbs{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:6px;
+  }
+  .thumb{
+    position:relative;
+    width:72px;height:72px;
+    border-radius:10px;
+    overflow:hidden;
+    border:1px solid var(--line);
+    background:#f1ece0;
+  }
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .thumb button{
+    position:absolute;top:2px;right:2px;
+    width:22px;height:22px;
+    border-radius:50%;
+    border:none;
+    background:rgba(0,0,0,0.65);
+    color:#fff;
+    font-size:13px;
+    line-height:22px;
+    padding:0;
+    cursor:pointer;
+  }
+
+  .submit-btn{
+    width:100%;
+    margin-top:6px;
+    padding:16px;
+    min-height:52px;
+    border-radius:12px;
+    border:none;
+    background:var(--gold);
+    color:var(--red-deep);
+    font-weight:800;
+    font-size:16px;
+    letter-spacing:.02em;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .submit-btn:active{transform:translateY(1px);}
+  .submit-btn:disabled{opacity:.6;cursor:default;}
+
+  .status{
+    margin-top:12px;
+    font-size:13.5px;
+    text-align:center;
+  }
+  .status.error{color:var(--danger);}
+  .status.info{color:var(--muted);}
+
+  .success-card{
+    background:var(--paper);
+    border-radius:18px;
+    box-shadow:0 16px 40px rgba(32,24,16,0.14);
+    padding:30px 22px;
+    text-align:center;
+    border:1px solid var(--line);
+  }
+  .success-card .check{
+    width:64px;height:64px;border-radius:50%;
+    background:var(--ok);
+    color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto 16px;
+    font-size:30px;
+  }
+  .success-card h2{margin:0 0 8px;font-size:21px;}
+  .success-card p{color:var(--muted);margin:0 0 4px;font-size:14.5px;}
+
+  footer{
+    max-width:480px;
+    margin:24px auto 0;
+    text-align:center;
+    color:var(--muted);
+    font-size:12px;
+  }
+  footer strong{color:var(--red);}
+</style>
+</head>
+<body>
+
+<div class="wave-band">
+  <div class="band-inner">
+    <div class="logo-disc"><img src="assets/tarang-logo.jpg" alt="Tarang Plus logo"></div>
+    <p class="eyebrow">Casting Call</p>
+    <h1>Tarang Plus Auditions</h1>
+    <p class="sub">Register below to book your audition slot. It takes less than two minutes.</p>
+  </div>
+  <svg class="wave-shape" viewBox="0 0 500 46" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0,20 C120,50 380,-10 500,22 L500,46 L0,46 Z" fill="#FFF8EC"></path>
+  </svg>
+</div>
+
+<main>
+  <form id="auditionForm" class="card" novalidate>
+
+    <div class="field">
+      <label for="fullName">Full name</label>
+      <input type="text" id="fullName" name="fullName" placeholder="e.g. Ananya Patra" required autocomplete="name">
+    </div>
+
+    <div class="field">
+      <label for="phone">Phone number</label>
+      <input type="tel" id="phone" name="phone" placeholder="e.g. 98765 43210" required inputmode="tel" autocomplete="tel">
+    </div>
+
+    <div class="field">
+      <label for="email">Email <span class="hint">(optional)</span></label>
+      <input type="email" id="email" name="email" placeholder="e.g. ananya@email.com" inputmode="email" autocomplete="email">
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label for="age">Age</label>
+        <input type="number" id="age" name="age" placeholder="e.g. 22" min="1" max="120" required inputmode="numeric">
+      </div>
+      <div class="field">
+        <label for="city">City</label>
+        <input type="text" id="city" name="city" placeholder="e.g. Bhubaneswar" required autocomplete="address-level2">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="experience">Experience <span class="hint">— dance, singing, acting, anchoring, etc.</span></label>
+      <textarea id="experience" name="experience" placeholder="Tell us what you've done so far and what you'd like to audition for" required></textarea>
+    </div>
+
+    <div class="photo-section">
+      <h3>Add a photo</h3>
+      <p class="hint">Take a selfie, snap a photo with the back camera, or attach as many photos as you like from your gallery — any size or format works.</p>
+
+      <div class="photo-buttons">
+        <button type="button" class="photo-btn primary" id="frontCameraBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="14" r="3.5" stroke="currentColor" stroke-width="2"/></svg>
+          Selfie (front camera)
+        </button>
+        <input class="file-input" type="file" id="frontCameraInput" accept="image/*" capture="user" tabindex="-1">
+
+        <button type="button" class="photo-btn secondary" id="backCameraBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="14" r="3.5" stroke="currentColor" stroke-width="2"/></svg>
+          Photo (back camera)
+        </button>
+        <input class="file-input" type="file" id="backCameraInput" accept="image/*" capture="environment" tabindex="-1">
+
+        <button type="button" class="photo-btn" id="attachBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 4v16M4 12h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Attach from gallery
+        </button>
+        <input class="file-input" type="file" id="attachInput" accept="image/*" multiple tabindex="-1">
+      </div>
+
+      <div class="thumbs" id="thumbs"></div>
+    </div>
+
+    <button type="submit" class="submit-btn" id="submitBtn">Submit my audition entry</button>
+    <div class="status" id="statusMsg"></div>
+  </form>
+
+  <div class="success-card" id="successCard" hidden>
+    <div class="check">✓</div>
+    <h2>You're registered!</h2>
+    <p>Thanks for signing up for the Tarang Plus audition.</p>
+    <p>Our team will reach out to you with your slot details.</p>
+  </div>
+
+  <footer>
+    Presented by <strong>Tarang Plus</strong>
+  </footer>
+</main>
+
+<!-- Submissions go through this hidden iframe as a real form POST rather
+     than fetch(): Google Apps Script Web App URLs redirect internally,
+     which browsers, extensions and in-app browsers often block for
+     fetch()/XHR ("Failed to fetch") but never for an ordinary form
+     submission — that's been allowed cross-site since long before CORS
+     existed, which is exactly why it's the standard, reliable way to
+     post to Apps Script from a static page. -->
+<iframe name="hiddenSubmitFrame" class="file-input" title="submission target"></iframe>
+<form id="hiddenGoogleForm" method="POST" target="hiddenSubmitFrame" class="file-input">
+  <input type="hidden" name="payload" id="hiddenPayloadField">
+</form>
+
+<script>
+(function(){
+  // ---- CONFIGURATION -----------------------------------------------------
+  // Paste the Google Apps Script Web App URL here after deploying
+  // google-apps-script/Code.gs (see ../README.md for step-by-step setup).
+  var CONFIG = {
+    SCRIPT_URL: "https://script.google.com/macros/s/AKfycbyI2Q9mw_omSxfbds_byqxd1Az62wkRRgNdN_4Dh7mkm7FmyzwnxJxFXiZG3tu2LRiCYw/exec"
+  };
+  // -------------------------------------------------------------------------
+
+  var form = document.getElementById('auditionForm');
+  var frontCameraBtn = document.getElementById('frontCameraBtn');
+  var frontCameraInput = document.getElementById('frontCameraInput');
+  var backCameraBtn = document.getElementById('backCameraBtn');
+  var backCameraInput = document.getElementById('backCameraInput');
+  var attachBtn = document.getElementById('attachBtn');
+  var attachInput = document.getElementById('attachInput');
+  var thumbsEl = document.getElementById('thumbs');
+  var statusEl = document.getElementById('statusMsg');
+  var submitBtn = document.getElementById('submitBtn');
+  var successCard = document.getElementById('successCard');
+  var hiddenGoogleForm = document.getElementById('hiddenGoogleForm');
+  var hiddenPayloadField = document.getElementById('hiddenPayloadField');
+
+  var files = []; // { file, id }
+  var counter = 0;
+
+  // Trigger the hidden file inputs from ordinary buttons — more reliable
+  // across mobile browsers than relying on a <label for> association.
+  frontCameraBtn.addEventListener('click', function(){ frontCameraInput.click(); });
+  backCameraBtn.addEventListener('click', function(){ backCameraInput.click(); });
+  attachBtn.addEventListener('click', function(){ attachInput.click(); });
+
+  function addFiles(fileList){
+    Array.prototype.forEach.call(fileList, function(f){
+      if (!f.type || f.type.indexOf('image/') === 0){
+        files.push({ file: f, id: 'f' + (counter++) });
+      }
+    });
+    renderThumbs();
+  }
+
+  function renderThumbs(){
+    thumbsEl.innerHTML = '';
+    files.forEach(function(entry){
+      var url = URL.createObjectURL(entry.file);
+      var div = document.createElement('div');
+      div.className = 'thumb';
+      div.innerHTML = '<img src="' + url + '" alt=""><button type="button" aria-label="Remove photo">×</button>';
+      div.querySelector('button').addEventListener('click', function(){
+        files = files.filter(function(e){ return e.id !== entry.id; });
+        renderThumbs();
+      });
+      thumbsEl.appendChild(div);
+    });
+  }
+
+  frontCameraInput.addEventListener('change', function(e){ addFiles(e.target.files); e.target.value=''; });
+  backCameraInput.addEventListener('change', function(e){ addFiles(e.target.files); e.target.value=''; });
+  attachInput.addEventListener('change', function(e){ addFiles(e.target.files); e.target.value=''; });
+
+  function fileToBase64(file){
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(){ resolve(reader.result.split(',')[1]); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function setStatus(msg, cls){
+    statusEl.textContent = msg || '';
+    statusEl.className = 'status' + (cls ? ' ' + cls : '');
+  }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    setStatus('');
+
+    var payload = {
+      fullName: document.getElementById('fullName').value.trim(),
+      phone: document.getElementById('phone').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      age: document.getElementById('age').value.trim(),
+      city: document.getElementById('city').value.trim(),
+      experience: document.getElementById('experience').value.trim()
+    };
+
+    if (!payload.fullName || !payload.phone || !payload.age || !payload.city || !payload.experience){
+      setStatus('Please fill in your name, phone number, age, city and experience.', 'error');
+      return;
+    }
+
+    submitBtn.disabled = true;
+    setStatus(files.length ? 'Uploading your details and photos…' : 'Submitting your details…', 'info');
+
+    Promise.all(files.map(function(entry){
+      return fileToBase64(entry.file).then(function(data){
+        return { filename: entry.file.name || 'photo.jpg', mimeType: entry.file.type || 'image/jpeg', data: data };
+      });
+    })).then(function(photos){
+      payload.photos = photos;
+
+      if (!CONFIG.SCRIPT_URL){
+        // Not connected to Google yet — see README for setup steps.
+        setStatus('Form is not yet connected to Google Sheets/Drive. Add SCRIPT_URL in this file — see README.', 'error');
+        submitBtn.disabled = false;
+        return;
+      }
+
+      // Submit as a real form POST through a hidden iframe rather than
+      // fetch(): a plain form submission has been allowed cross-site
+      // since long before CORS existed, so it isn't blocked by the
+      // browser/extensions/in-app browsers the way fetch()/XHR to Apps
+      // Script's redirecting URL often is ("Failed to fetch"). The iframe
+      // itself can't be read back (cross-origin), so Code.gs posts the
+      // real result back via window.top.postMessage — we wait for that
+      // actual confirmation rather than assuming success once the form
+      // is sent, since a silent server-side failure must surface, not
+      // report a false success to whoever's registering.
+      return new Promise(function(resolve, reject){
+        var settled = false;
+
+        function onMessage(evt){
+          var data = evt.data;
+          if (!data || data.source !== 'tarang-audition-form') return;
+          settled = true;
+          window.removeEventListener('message', onMessage);
+          clearTimeout(timer);
+          if (data.result && data.result.status === 'success'){
+            resolve();
+          } else {
+            reject(new Error((data.result && data.result.message) || 'The form backend reported an error'));
+          }
+        }
+
+        var timer = setTimeout(function(){
+          if (settled) return;
+          settled = true;
+          window.removeEventListener('message', onMessage);
+          reject(new Error('No confirmation received from Google after 15s — your entry may not have been saved'));
+        }, 15000);
+
+        window.addEventListener('message', onMessage);
+
+        hiddenGoogleForm.action = CONFIG.SCRIPT_URL;
+        hiddenPayloadField.value = JSON.stringify(payload);
+        hiddenGoogleForm.submit();
+      }).then(function(){
+        form.hidden = true;
+        successCard.hidden = false;
+        successCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }).catch(function(err){
+      setStatus('Something went wrong: ' + err.message + '. Please try again.', 'error');
+      submitBtn.disabled = false;
+    });
+  });
+})();
+</script>
+</body>
+</html>
