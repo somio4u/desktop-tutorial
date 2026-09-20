@@ -8,8 +8,10 @@
  * live links and full setup notes).
  *
  * On each submission it:
- *   - Appends a row (timestamp, name, age, city, experience, photo links)
- *     to the "Sheet1" tab.
+ *   - Ensures the header row matches HEADERS below (fixes it up if not,
+ *     so adding a column here never leaves stale headers behind).
+ *   - Appends a row (timestamp, name, phone, email, age, city,
+ *     experience, photo links) to the "Sheet1" tab.
  *   - Saves any attached photos into the Drive folder below, shared as
  *     "anyone with the link can view" so the links in the sheet open
  *     directly.
@@ -17,6 +19,7 @@
 
 var SHEET_NAME = 'Sheet1';
 var DRIVE_FOLDER_ID = '1AlDwFgAxo9TVkkMaGNln-ejU2v2-rLB5';
+var HEADERS = ['Timestamp', 'Full name', 'Phone', 'Email', 'Age', 'City', 'Experience', 'Photos'];
 
 function doPost(e) {
   var lock = LockService.getScriptLock();
@@ -24,6 +27,7 @@ function doPost(e) {
   try {
     var data = JSON.parse(e.postData.contents);
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+    ensureHeaders_(sheet);
     var folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
 
     var photoLinks = [];
@@ -37,12 +41,30 @@ function doPost(e) {
       photoLinks.push(file.getUrl());
     });
 
-    sheet.appendRow([new Date(), data.fullName || '', data.age || '', data.city || '', data.experience || '', photoLinks.join('\n')]);
+    sheet.appendRow([
+      new Date(),
+      data.fullName || '',
+      data.phone || '',
+      data.email || '',
+      data.age || '',
+      data.city || '',
+      data.experience || '',
+      photoLinks.join('\n')
+    ]);
 
     return ContentService.createTextOutput(JSON.stringify({ status: 'success' })).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: err.message })).setMimeType(ContentService.MimeType.JSON);
   } finally {
     lock.releaseLock();
+  }
+}
+
+function ensureHeaders_(sheet) {
+  var current = sheet.getRange(1, 1, 1, HEADERS.length).getValues()[0];
+  var matches = HEADERS.every(function (h, i) { return current[i] === h; });
+  if (!matches) {
+    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+    sheet.setFrozenRows(1);
   }
 }

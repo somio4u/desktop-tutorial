@@ -54,49 +54,48 @@
   }
   .band-inner{
     position:relative;
-    max-width:560px;
+    max-width:480px;
     margin:0 auto;
-    padding:28px 20px 56px;
+    padding:26px 20px 52px;
     text-align:center;
   }
   .logo-disc{
-    width:104px;height:104px;
+    width:96px;height:96px;
     margin:0 auto 14px;
-    border-radius:24px;
+    border-radius:22px;
     background:var(--paper);
     display:flex;align-items:center;justify-content:center;
     box-shadow:0 10px 24px rgba(0,0,0,0.25);
   }
   .logo-disc img{
-    width:86px;height:86px;object-fit:contain;
+    width:80px;height:80px;object-fit:contain;
   }
   .eyebrow{
     color:var(--gold);
     font-weight:700;
     letter-spacing:.14em;
     text-transform:uppercase;
-    font-size:12.5px;
+    font-size:12px;
     margin:0 0 6px;
   }
   .band-inner h1{
     color:#fff;
-    font-size:clamp(26px,7vw,36px);
-    line-height:1.08;
+    font-size:clamp(24px,7vw,32px);
+    line-height:1.1;
     margin:0 0 10px;
     font-weight:800;
     text-wrap:balance;
   }
   .band-inner p.sub{
     color:#FFE9C7;
-    margin:0;
-    font-size:15px;
-    max-width:40ch;
     margin:0 auto;
+    font-size:14.5px;
+    max-width:38ch;
   }
 
   main{
-    max-width:560px;
-    margin:-34px auto 0;
+    max-width:480px;
+    margin:-30px auto 0;
     position:relative;
     z-index:2;
   }
@@ -105,11 +104,11 @@
     background:var(--paper);
     border-radius:18px;
     box-shadow:0 16px 40px rgba(32,24,16,0.14);
-    padding:22px 20px 26px;
+    padding:20px 16px 24px;
     border:1px solid var(--line);
   }
 
-  .field{margin-bottom:18px;}
+  .field{margin-bottom:16px;}
   .field label{
     display:block;
     font-weight:700;
@@ -123,16 +122,19 @@
     font-size:12.5px;
   }
   input[type="text"],
+  input[type="tel"],
+  input[type="email"],
   input[type="number"],
   textarea{
     width:100%;
     font:inherit;
     font-size:16px;
-    padding:12px 13px;
+    padding:13px;
     border-radius:10px;
     border:1.5px solid var(--line);
     background:#fff;
     color:var(--ink);
+    min-height:48px;
   }
   input:focus, textarea:focus{
     outline:none;
@@ -141,8 +143,8 @@
   }
   textarea{min-height:96px;resize:vertical;font-family:inherit;}
 
-  .row2{display:flex;gap:12px;flex-wrap:wrap;}
-  .row2 > .field{flex:1 1 140px;margin-bottom:18px;}
+  .row2{display:flex;gap:10px;flex-wrap:wrap;}
+  .row2 > .field{flex:1 1 130px;margin-bottom:16px;}
 
   .photo-section{
     border-top:1px dashed var(--line);
@@ -160,33 +162,54 @@
   }
   .photo-buttons{
     display:flex;
+    flex-direction:column;
     gap:10px;
-    flex-wrap:wrap;
     margin-bottom:14px;
   }
   .photo-btn{
-    flex:1 1 150px;
+    width:100%;
     display:flex;
     align-items:center;
     justify-content:center;
-    gap:8px;
-    padding:13px 10px;
+    gap:9px;
+    padding:14px 10px;
+    min-height:50px;
     border-radius:12px;
     border:1.5px solid var(--line);
     background:var(--cream);
     color:var(--ink);
     font-weight:700;
-    font-size:13.5px;
+    font-size:14.5px;
+    font-family:inherit;
     cursor:pointer;
     text-align:center;
+    -webkit-tap-highlight-color:transparent;
   }
   .photo-btn.primary{
     background:var(--blue);
     border-color:var(--blue);
     color:#fff;
   }
+  .photo-btn.secondary{
+    background:var(--red);
+    border-color:var(--red);
+    color:#fff;
+  }
   .photo-btn svg{flex:none;}
-  input[type="file"]{display:none;}
+  .photo-btn:active{transform:translateY(1px);}
+
+  /* Visually hidden but still clickable/focusable — display:none can be
+     unreliable for triggering the native file picker on some mobile
+     browsers, so the file inputs stay in the layout, just invisible. */
+  .file-input{
+    position:absolute;
+    width:1px;height:1px;
+    padding:0;margin:-1px;
+    overflow:hidden;
+    clip:rect(0,0,0,0);
+    white-space:nowrap;
+    border:0;
+  }
 
   .thumbs{
     display:flex;
@@ -196,7 +219,7 @@
   }
   .thumb{
     position:relative;
-    width:74px;height:74px;
+    width:72px;height:72px;
     border-radius:10px;
     overflow:hidden;
     border:1px solid var(--line);
@@ -205,13 +228,13 @@
   .thumb img{width:100%;height:100%;object-fit:cover;display:block;}
   .thumb button{
     position:absolute;top:2px;right:2px;
-    width:20px;height:20px;
+    width:22px;height:22px;
     border-radius:50%;
     border:none;
     background:rgba(0,0,0,0.65);
     color:#fff;
-    font-size:12px;
-    line-height:20px;
+    font-size:13px;
+    line-height:22px;
     padding:0;
     cursor:pointer;
   }
@@ -219,7 +242,8 @@
   .submit-btn{
     width:100%;
     margin-top:6px;
-    padding:15px 16px;
+    padding:16px;
+    min-height:52px;
     border-radius:12px;
     border:none;
     background:var(--gold);
@@ -228,6 +252,7 @@
     font-size:16px;
     letter-spacing:.02em;
     cursor:pointer;
+    font-family:inherit;
   }
   .submit-btn:active{transform:translateY(1px);}
   .submit-btn:disabled{opacity:.6;cursor:default;}
@@ -244,7 +269,7 @@
     background:var(--paper);
     border-radius:18px;
     box-shadow:0 16px 40px rgba(32,24,16,0.14);
-    padding:32px 24px;
+    padding:30px 22px;
     text-align:center;
     border:1px solid var(--line);
   }
@@ -256,12 +281,12 @@
     margin:0 auto 16px;
     font-size:30px;
   }
-  .success-card h2{margin:0 0 8px;font-size:22px;}
+  .success-card h2{margin:0 0 8px;font-size:21px;}
   .success-card p{color:var(--muted);margin:0 0 4px;font-size:14.5px;}
 
   footer{
-    max-width:560px;
-    margin:26px auto 0;
+    max-width:480px;
+    margin:24px auto 0;
     text-align:center;
     color:var(--muted);
     font-size:12px;
@@ -291,6 +316,16 @@
       <input type="text" id="fullName" name="fullName" placeholder="e.g. Ananya Patra" required autocomplete="name">
     </div>
 
+    <div class="field">
+      <label for="phone">Phone number</label>
+      <input type="tel" id="phone" name="phone" placeholder="e.g. 98765 43210" required inputmode="tel" autocomplete="tel">
+    </div>
+
+    <div class="field">
+      <label for="email">Email <span class="hint">(optional)</span></label>
+      <input type="email" id="email" name="email" placeholder="e.g. ananya@email.com" inputmode="email" autocomplete="email">
+    </div>
+
     <div class="row2">
       <div class="field">
         <label for="age">Age</label>
@@ -309,20 +344,26 @@
 
     <div class="photo-section">
       <h3>Add a photo</h3>
-      <p class="hint">Take a selfie now, or attach as many photos as you like from your gallery — any size or format works.</p>
+      <p class="hint">Take a selfie, snap a photo with the back camera, or attach as many photos as you like from your gallery — any size or format works.</p>
 
       <div class="photo-buttons">
-        <label class="photo-btn primary" for="cameraInput">
+        <button type="button" class="photo-btn primary" id="frontCameraBtn">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="14" r="3.5" stroke="currentColor" stroke-width="2"/></svg>
-          Take a selfie
-        </label>
-        <input type="file" id="cameraInput" accept="image/*" capture="user">
+          Selfie (front camera)
+        </button>
+        <input class="file-input" type="file" id="frontCameraInput" accept="image/*" capture="user" tabindex="-1">
 
-        <label class="photo-btn" for="attachInput">
+        <button type="button" class="photo-btn secondary" id="backCameraBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="14" r="3.5" stroke="currentColor" stroke-width="2"/></svg>
+          Photo (back camera)
+        </button>
+        <input class="file-input" type="file" id="backCameraInput" accept="image/*" capture="environment" tabindex="-1">
+
+        <button type="button" class="photo-btn" id="attachBtn">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 4v16M4 12h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          Attach photos
-        </label>
-        <input type="file" id="attachInput" accept="image/*" multiple>
+          Attach from gallery
+        </button>
+        <input class="file-input" type="file" id="attachInput" accept="image/*" multiple tabindex="-1">
       </div>
 
       <div class="thumbs" id="thumbs"></div>
@@ -355,7 +396,11 @@
   // -------------------------------------------------------------------------
 
   var form = document.getElementById('auditionForm');
-  var cameraInput = document.getElementById('cameraInput');
+  var frontCameraBtn = document.getElementById('frontCameraBtn');
+  var frontCameraInput = document.getElementById('frontCameraInput');
+  var backCameraBtn = document.getElementById('backCameraBtn');
+  var backCameraInput = document.getElementById('backCameraInput');
+  var attachBtn = document.getElementById('attachBtn');
   var attachInput = document.getElementById('attachInput');
   var thumbsEl = document.getElementById('thumbs');
   var statusEl = document.getElementById('statusMsg');
@@ -364,6 +409,12 @@
 
   var files = []; // { file, id }
   var counter = 0;
+
+  // Trigger the hidden file inputs from ordinary buttons — more reliable
+  // across mobile browsers than relying on a <label for> association.
+  frontCameraBtn.addEventListener('click', function(){ frontCameraInput.click(); });
+  backCameraBtn.addEventListener('click', function(){ backCameraInput.click(); });
+  attachBtn.addEventListener('click', function(){ attachInput.click(); });
 
   function addFiles(fileList){
     Array.prototype.forEach.call(fileList, function(f){
@@ -389,7 +440,8 @@
     });
   }
 
-  cameraInput.addEventListener('change', function(e){ addFiles(e.target.files); e.target.value=''; });
+  frontCameraInput.addEventListener('change', function(e){ addFiles(e.target.files); e.target.value=''; });
+  backCameraInput.addEventListener('change', function(e){ addFiles(e.target.files); e.target.value=''; });
   attachInput.addEventListener('change', function(e){ addFiles(e.target.files); e.target.value=''; });
 
   function fileToBase64(file){
@@ -412,13 +464,15 @@
 
     var payload = {
       fullName: document.getElementById('fullName').value.trim(),
+      phone: document.getElementById('phone').value.trim(),
+      email: document.getElementById('email').value.trim(),
       age: document.getElementById('age').value.trim(),
       city: document.getElementById('city').value.trim(),
       experience: document.getElementById('experience').value.trim()
     };
 
-    if (!payload.fullName || !payload.age || !payload.city || !payload.experience){
-      setStatus('Please fill in your name, age, city and experience.', 'error');
+    if (!payload.fullName || !payload.phone || !payload.age || !payload.city || !payload.experience){
+      setStatus('Please fill in your name, phone number, age, city and experience.', 'error');
       return;
     }
 
