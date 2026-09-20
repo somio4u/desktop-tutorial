@@ -25,7 +25,14 @@ function doPost(e) {
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
-    var data = JSON.parse(e.postData.contents);
+    // The page submits as a real HTML form (a hidden iframe target) rather
+    // than fetch(), since Apps Script's redirecting URL gets blocked by
+    // fetch()/XHR in many browsers/in-app browsers ("Failed to fetch") but
+    // never for a plain form POST. That means the payload arrives as a
+    // form field, not a raw JSON body — but fall back to the raw body too,
+    // so a direct JSON POST (e.g. for testing with curl) still works.
+    var raw = (e.parameter && e.parameter.payload) ? e.parameter.payload : e.postData.contents;
+    var data = JSON.parse(raw);
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
     ensureHeaders_(sheet);
     var folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);

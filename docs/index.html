@@ -385,6 +385,18 @@
   </footer>
 </main>
 
+<!-- Submissions go through this hidden iframe as a real form POST rather
+     than fetch(): Google Apps Script Web App URLs redirect internally,
+     which browsers, extensions and in-app browsers often block for
+     fetch()/XHR ("Failed to fetch") but never for an ordinary form
+     submission — that's been allowed cross-site since long before CORS
+     existed, which is exactly why it's the standard, reliable way to
+     post to Apps Script from a static page. -->
+<iframe name="hiddenSubmitFrame" class="file-input" title="submission target"></iframe>
+<form id="hiddenGoogleForm" method="POST" target="hiddenSubmitFrame" class="file-input">
+  <input type="hidden" name="payload" id="hiddenPayloadField">
+</form>
+
 <script>
 (function(){
   // ---- CONFIGURATION -----------------------------------------------------
@@ -406,6 +418,9 @@
   var statusEl = document.getElementById('statusMsg');
   var submitBtn = document.getElementById('submitBtn');
   var successCard = document.getElementById('successCard');
+  var hiddenGoogleForm = document.getElementById('hiddenGoogleForm');
+  var hiddenPayloadField = document.getElementById('hiddenPayloadField');
+  var hiddenSubmitFrame = document.querySelector('iframe[name="hiddenSubmitFrame"]');
 
   var files = []; // { file, id }
   var counter = 0;
@@ -493,16 +508,28 @@
         return;
       }
 
-      // Apps Script Web App URLs redirect internally, and browsers block
-      // reading that redirected response under normal CORS rules even
-      // though the script runs fine — so this request is sent "no-cors"
-      // (fire-and-forget: the browser can't read the response back, but
-      // the request itself still reaches and runs the script).
-      return fetch(CONFIG.SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
+      // Submit as a real form POST through a hidden iframe rather than
+      // fetch(): a plain form submission has been allowed cross-site
+      // since long before CORS existed, so it isn't blocked by the
+      // browser/extensions/in-app browsers the way fetch()/XHR to Apps
+      // Script's redirecting URL often is ("Failed to fetch"). We can't
+      // read the response back this way, so a completed submission
+      // (iframe load, or a timeout fallback in case load never fires)
+      // is treated as success.
+      return new Promise(function(resolve){
+        var settled = false;
+        function finish(){
+          if (settled) return;
+          settled = true;
+          hiddenSubmitFrame.removeEventListener('load', finish);
+          resolve();
+        }
+        hiddenSubmitFrame.addEventListener('load', finish);
+        setTimeout(finish, 4000);
+
+        hiddenGoogleForm.action = CONFIG.SCRIPT_URL;
+        hiddenPayloadField.value = JSON.stringify(payload);
+        hiddenGoogleForm.submit();
       }).then(function(){
         form.hidden = true;
         successCard.hidden = false;
