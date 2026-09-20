@@ -33,9 +33,12 @@ Google account), update two things to match:
 Any static hosting works since this is a single HTML file. The simplest free
 option with this repo:
 
-1. On GitHub, go to **Settings → Pages** for this repository.
+1. On GitHub, go to **Settings → Pages** for this repository (the repo must
+   be public for this to be available on the free plan).
 2. Under "Build and deployment", choose **Deploy from a branch**, pick this
-   branch, and set the folder to `/tarang-audition-form`.
+   branch, and set the folder to **`/docs`** (GitHub Pages only supports
+   `/` or `/docs` as the source folder, which is why this project lives
+   under `docs/` instead of a custom folder name).
 3. Save — GitHub gives you a public URL a minute or two later
    (something like `https://<user>.github.io/<repo>/`).
 
