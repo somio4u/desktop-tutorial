@@ -1,91 +1,48 @@
 /**
  * Tarang Plus Audition Registration — backend.
  *
- * Setup (see ../README.md for full step-by-step instructions):
- *   1. Create a Google Sheet, e.g. "Tarang Plus Audition Responses".
- *   2. Open it, then Extensions > Apps Script.
- *   3. Replace the default Code.gs contents with this file, save.
- *   4. Deploy > New deployment > Web app.
- *        Execute as: Me
- *        Who has access: Anyone
- *   5. Copy the Web app URL and paste it into CONFIG.SCRIPT_URL in
- *      tarang-audition-form/index.html.
+ * This is the exact script deployed at the Web app URL configured as
+ * CONFIG.SCRIPT_URL in ../index.html. It's bound to the
+ * "Tarang Plus Audition Responses" Google Sheet and writes photos into
+ * the "Tarang Plus Auditions" Drive folder (see ../README.md for the
+ * live links and full setup notes).
  *
- * On each submission this script:
- *   - Appends a row to the "Responses" sheet (created automatically).
- *   - Saves any attached photos into a Drive folder named
- *     "Tarang Plus Audition Photos" (created automatically, shared as
+ * On each submission it:
+ *   - Appends a row (timestamp, name, age, city, experience, photo links)
+ *     to the "Sheet1" tab.
+ *   - Saves any attached photos into the Drive folder below, shared as
  *     "anyone with the link can view" so the links in the sheet open
- *     directly), and records their links in the sheet.
+ *     directly.
  */
 
-var SHEET_NAME = 'Responses';
-var DRIVE_FOLDER_NAME = 'Tarang Plus Audition Photos';
-var SHEET_HEADERS = ['Timestamp', 'Full name', 'Age', 'City', 'Experience', 'Photos'];
+var SHEET_NAME = 'Sheet1';
+var DRIVE_FOLDER_ID = '1AlDwFgAxo9TVkkMaGNln-ejU2v2-rLB5';
 
 function doPost(e) {
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
     var data = JSON.parse(e.postData.contents);
-
-    var sheet = getOrCreateSheet_();
-    var folder = getOrCreateFolder_();
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+    var folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
 
     var photoLinks = [];
     (data.photos || []).forEach(function (photo, i) {
       if (!photo || !photo.data) return;
-      var safeName = sanitizeFileName_(data.fullName || 'attendee') + '_' + (i + 1) +
-        '_' + (photo.filename || 'photo.jpg');
-      var blob = Utilities.newBlob(
-        Utilities.base64Decode(photo.data),
-        photo.mimeType || 'image/jpeg',
-        safeName
-      );
+      var safeName = String(data.fullName || 'attendee').replace(/[^a-zA-Z0-9-_ ]/g, '').trim().replace(/\s+/g, '_') +
+        '_' + (i + 1) + '_' + (photo.filename || 'photo.jpg');
+      var blob = Utilities.newBlob(Utilities.base64Decode(photo.data), photo.mimeType || 'image/jpeg', safeName);
       var file = folder.createFile(blob);
       file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
       photoLinks.push(file.getUrl());
     });
 
-    sheet.appendRow([
-      new Date(),
-      data.fullName || '',
-      data.age || '',
-      data.city || '',
-      data.experience || '',
-      photoLinks.join('\n')
-    ]);
+    sheet.appendRow([new Date(), data.fullName || '', data.age || '', data.city || '', data.experience || '', photoLinks.join('\n')]);
 
-    return jsonOutput_({ status: 'success' });
+    return ContentService.createTextOutput(JSON.stringify({ status: 'success' })).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
-    return jsonOutput_({ status: 'error', message: err.message || String(err) });
+    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: err.message })).setMimeType(ContentService.MimeType.JSON);
   } finally {
     lock.releaseLock();
   }
-}
-
-function getOrCreateSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(SHEET_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(SHEET_NAME);
-    sheet.appendRow(SHEET_HEADERS);
-    sheet.setFrozenRows(1);
-  }
-  return sheet;
-}
-
-function getOrCreateFolder_() {
-  var folders = DriveApp.getFoldersByName(DRIVE_FOLDER_NAME);
-  if (folders.hasNext()) return folders.next();
-  return DriveApp.createFolder(DRIVE_FOLDER_NAME);
-}
-
-function sanitizeFileName_(name) {
-  return String(name).replace(/[^a-zA-Z0-9-_ ]/g, '').trim().replace(/\s+/g, '_') || 'attendee';
-}
-
-function jsonOutput_(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
 }

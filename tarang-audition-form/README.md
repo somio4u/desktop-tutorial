@@ -5,49 +5,30 @@ A mobile-friendly audition sign-up page for Tarang Plus. Attendees enter their
 **attach as many photos as they like** — there's no limit on file count,
 size or format built into the form.
 
-Every submission is saved straight into **your own Google Sheet**, and every
-photo into **your own Google Drive folder** — using a free Google Apps Script
-backend (no server or paid hosting needed).
-
 Files:
 - `index.html` — the form itself.
 - `assets/tarang-logo.jpg` — the Tarang Plus logo used on the page.
-- `google-apps-script/Code.gs` — the backend script that writes to Sheets/Drive.
+- `google-apps-script/Code.gs` — the deployed backend script (see below).
 
-## 1. Connect it to your Google Sheet + Drive
+## Status: connected and live
 
-1. Go to [sheets.google.com](https://sheets.google.com) and create a new
-   blank spreadsheet. Name it something like **"Tarang Plus Audition
-   Responses"**.
-2. In that sheet, open **Extensions → Apps Script**.
-3. Delete the placeholder code in `Code.gs`, then paste in the full contents
-   of `google-apps-script/Code.gs` from this folder. Save (Ctrl/Cmd+S).
-4. Click **Deploy → New deployment**.
-   - Click the gear icon next to "Select type" and choose **Web app**.
-   - Description: anything, e.g. "Tarang audition form".
-   - **Execute as:** Me
-   - **Who has access:** Anyone
-   - Click **Deploy**, then **Authorize access** and approve the permissions
-     (it needs to write to your Sheet and Drive).
-5. Copy the **Web app URL** it gives you (ends in `/exec`).
+This form is already wired up to Google:
 
-That's it on the Google side — the script automatically creates a
-`Responses` tab in your sheet (with headers) and a Drive folder called
-**"Tarang Plus Audition Photos"** the first time someone submits the form.
+- **Responses sheet:** [Tarang Plus Audition Responses](https://docs.google.com/spreadsheets/d/1ifTKO5dg2C9qzX1-KzNkcBk6NDfHqg9QwJ4-TjKXmuM/edit)
+- **Photos folder:** [Tarang Plus Auditions](https://drive.google.com/drive/folders/1AlDwFgAxo9TVkkMaGNln-ejU2v2-rLB5)
+- **Backend:** `google-apps-script/Code.gs`, deployed as a Web App and
+  configured as `CONFIG.SCRIPT_URL` in `index.html`.
 
-## 2. Point the form at your Web App URL
+Every submission appends a row to the sheet above; every attached photo is
+saved into the Drive folder above and shared as "anyone with the link can
+view" so the links in the sheet open directly.
 
-Open `index.html` and find this near the bottom of the file:
+If the deployment is ever re-created (e.g. a new Web App version, or a new
+Google account), update two things to match:
+1. `DRIVE_FOLDER_ID` / `SHEET_NAME` constants at the top of `Code.gs`
+2. `CONFIG.SCRIPT_URL` near the bottom of `index.html`
 
-```js
-var CONFIG = {
-  SCRIPT_URL: "" // e.g. "https://script.google.com/macros/s/AKfycb.../exec"
-};
-```
-
-Paste your Web app URL between the quotes and save.
-
-## 3. Publish the page so people can open it
+## Publishing the page so people can open it
 
 Any static hosting works since this is a single HTML file. The simplest free
 option with this repo:
@@ -58,18 +39,15 @@ option with this repo:
 3. Save — GitHub gives you a public URL a minute or two later
    (something like `https://<user>.github.io/<repo>/`).
 
-## 4. Generate the QR code
+## Generating a QR code
 
-Once you have the published URL, turn it into a QR code (for example with
-[the free generator at qr-code-generator.com](https://www.qr-code-generator.com/)
-or any QR app) and print/paste it wherever attendees will scan it — they'll
-land straight on the form.
+Turn the published URL into a QR code (e.g. with
+[qr-code-generator.com](https://www.qr-code-generator.com/) or any QR app)
+and print/paste it wherever attendees will scan it.
 
 ## Notes
 
 - Very large photos can occasionally fail if they exceed Google Apps
   Script's own request-size limit (~50MB per submission) — this is a Google
   platform limit, not a restriction added by this form.
-- Photo links are stored in the "Photos" column of the Responses sheet, one
-  link per line, shared as "anyone with the link can view" so they open
-  directly for whoever reviews entries.
+- Photo links are stored in the "Photos" column, one link per line.
