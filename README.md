@@ -5,15 +5,21 @@ audiobook voiceover.
 
 Pipeline: **Gemini** (story text + per-scene image prompts, as structured
 JSON) → **Imagen** (one illustration per scene) → **ElevenLabs**
-(text-to-speech, output as MP3 or raw PCM).
+(text-to-speech, output as MP3 or raw PCM). Gemini and Imagen are called via
+**Vertex AI**, authenticated with a service account JSON key.
 
 ## Setup
 
-### 1. Google AI
+### 1. Vertex AI
 
-1. Get an API key from [Google AI Studio](https://aistudio.google.com/apikey).
-2. Note: Imagen access may require billing to be enabled on the associated
-   Google Cloud project, depending on your account tier.
+1. In a Google Cloud project, enable the **Vertex AI API**.
+2. Create a service account with the **Vertex AI User** role, and download a
+   JSON key for it.
+3. Save that key file somewhere outside version control (the repo's
+   `.gitignore` already excludes `service-account*.json` as a safety net)
+   and note its path, your project ID, and the region you want to call
+   (e.g. `us-central1`).
+4. Note: Imagen access may require billing to be enabled on the project.
 
 ### 2. ElevenLabs
 
@@ -24,7 +30,9 @@ JSON) → **Imagen** (one illustration per scene) → **ElevenLabs**
 
 ```bash
 cp .env.example .env
-# fill in GOOGLE_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID
+# fill in GOOGLE_APPLICATION_CREDENTIALS (path to the service account JSON),
+# GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION,
+# ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID
 npm install
 ```
 

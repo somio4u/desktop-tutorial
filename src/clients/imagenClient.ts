@@ -1,4 +1,5 @@
 import { config } from '../config.js';
+import { getAccessToken, vertexUrl } from './googleAuth.js';
 
 export interface GenerateImageOptions {
   aspectRatio?: string;
@@ -9,14 +10,13 @@ interface ImagenPredictResponse {
 }
 
 export async function generateImage(prompt: string, options: GenerateImageOptions = {}): Promise<Buffer> {
-  if (!config.google.apiKey) {
-    throw new Error('GOOGLE_API_KEY is not set.');
-  }
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.google.imageModel}:predict?key=${config.google.apiKey}`;
+  const url = vertexUrl(config.google.imageModel, 'predict');
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      Authorization: `Bearer ${await getAccessToken()}`,
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({
       instances: [{ prompt }],
       parameters: { sampleCount: 1, aspectRatio: options.aspectRatio ?? '1:1' },

@@ -1,4 +1,5 @@
 import { config } from '../config.js';
+import { getAccessToken, vertexUrl } from './googleAuth.js';
 
 export interface StoryScene {
   text: string;
@@ -41,19 +42,18 @@ const RESPONSE_SCHEMA = {
 };
 
 export async function generateStory(input: GenerateStoryInput): Promise<StoryWithScenes> {
-  if (!config.google.apiKey) {
-    throw new Error('GOOGLE_API_KEY is not set.');
-  }
-
   const instruction = [
     `Write a${input.genre ? ` ${input.genre}` : ''} story based on this prompt: ${input.prompt}`,
     'Break the story into 3-6 scenes, in order. For each scene, write the scene\'s narrative text and a short, vivid, self-contained image-generation prompt describing what an illustration of that scene should show.',
   ].join('\n');
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.google.llmModel}:generateContent?key=${config.google.apiKey}`;
+  const url = vertexUrl(config.google.llmModel, 'generateContent');
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      Authorization: `Bearer ${await getAccessToken()}`,
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({
       contents: [{ parts: [{ text: instruction }] }],
       generationConfig: {

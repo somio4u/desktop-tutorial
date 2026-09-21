@@ -2,3 +2,7 @@ node_modules/
 dist/
 .env
 output/
+
+# Google Cloud service account keys — never commit these
+service-account*.json
+*-key.json
