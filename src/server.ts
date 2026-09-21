@@ -26,8 +26,10 @@ app.post('/api/stories', async (req, res) => {
 
     await writeFile(path.join(OUTPUT_DIR, `${id}.audio.${audioExtensionFor(result.outputFormat)}`), result.audio);
     await Promise.all(
-      result.images.map((img, i) =>
-        writeFile(path.join(OUTPUT_DIR, `${id}.image-${i}.${img.extension}`), img.buffer),
+      result.scenes.map((scene, i) =>
+        scene.image
+          ? writeFile(path.join(OUTPUT_DIR, `${id}.image-${i}.${scene.image.extension}`), scene.image.buffer)
+          : Promise.resolve(),
       ),
     );
 
@@ -36,7 +38,11 @@ app.post('/api/stories', async (req, res) => {
       storyText: result.storyText,
       outputFormat: result.outputFormat,
       audioUrl: `/api/stories/${id}/audio`,
-      imageUrls: result.images.map((_, i) => `/api/stories/${id}/images/${i}`),
+      scenes: result.scenes.map((scene, i) => ({
+        text: scene.text,
+        imagePrompt: scene.imagePrompt,
+        imageUrl: scene.image ? `/api/stories/${id}/images/${i}` : null,
+      })),
     });
   } catch (err) {
     res.status(502).json({ error: (err as Error).message });

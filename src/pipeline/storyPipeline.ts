@@ -1,4 +1,5 @@
-import { generateStory } from '../clients/difyClient.js';
+import { generateStory, type StoryScene } from '../clients/geminiClient.js';
+import { generateImage } from '../clients/imagenClient.js';
 import { synthesizeSpeech, type OutputFormat } from '../clients/elevenLabsClient.js';
 
 // Keep request bodies well under ElevenLabs' per-request character limit.
@@ -33,39 +34,36 @@ export interface CreateStoryOptions {
   outputFormat?: OutputFormat;
 }
 
-export interface StoryImage {
-  sourceUrl: string;
+export interface GeneratedImage {
   buffer: Buffer;
   extension: string;
+}
+
+export interface StorySceneResult {
+  text: string;
+  imagePrompt: string;
+  image: GeneratedImage | null;
 }
 
 export interface StoryResult {
   storyText: string;
   audio: Buffer;
   outputFormat: OutputFormat;
-  images: StoryImage[];
+  scenes: StorySceneResult[];
 }
 
-function extensionFromContentType(contentType: string | null): string {
-  if (contentType?.includes('png')) return 'png';
-  if (contentType?.includes('webp')) return 'webp';
-  return 'jpg';
-}
-
-async function downloadImage(url: string): Promise<StoryImage | null> {
+async function illustrateScene(scene: StoryScene): Promise<StorySceneResult> {
   try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`${res.status}`);
-    const buffer = Buffer.from(await res.arrayBuffer());
-    return { sourceUrl: url, buffer, extension: extensionFromContentType(res.headers.get('content-type')) };
+    const buffer = await generateImage(scene.imagePrompt);
+    return { text: scene.text, imagePrompt: scene.imagePrompt, image: { buffer, extension: 'png' } };
   } catch (err) {
-    console.warn(`Skipping illustration, failed to download ${url}: ${(err as Error).message}`);
-    return null;
+    console.warn(`Illustration failed for scene ("${scene.imagePrompt}"): ${(err as Error).message}`);
+    return { text: scene.text, imagePrompt: scene.imagePrompt, image: null };
   }
 }
 
 export async function createStory(options: CreateStoryOptions): Promise<StoryResult> {
-  const { storyText, images: imageUrls } = await generateStory({ prompt: options.prompt, genre: options.genre });
+  const { storyText, scenes } = await generateStory({ prompt: options.prompt, genre: options.genre });
   const outputFormat = options.outputFormat ?? 'pcm_44100';
 
   const chunks = splitIntoChunks(storyText, MAX_CHUNK_CHARS);
@@ -74,11 +72,10 @@ export async function createStory(options: CreateStoryOptions): Promise<StoryRes
     audioChunks.push(await synthesizeSpeech(chunk, { voiceId: options.voiceId, outputFormat }));
   }
 
-  const downloaded = await Promise.all(imageUrls.map(downloadImage));
-  const images = downloaded.filter((img): img is StoryImage => img !== null);
+  const sceneResults = await Promise.all(scenes.map(illustrateScene));
 
   // Raw pcm_* formats are headerless, so concatenating the byte buffers
   // yields one continuous stream. mp3 chunks concatenate acceptably for
   // playback but are not frame-perfect; re-encode with ffmpeg if that matters.
-  return { storyText, audio: Buffer.concat(audioChunks), outputFormat, images };
+  return { storyText, audio: Buffer.concat(audioChunks), outputFormat, scenes: sceneResults };
 }

@@ -5,9 +5,10 @@ function env(name: string, fallback?: string): string | undefined {
 }
 
 export const config = {
-  dify: {
-    baseUrl: env('DIFY_API_BASE_URL', 'https://api.dify.ai/v1')!,
-    apiKey: env('DIFY_API_KEY'),
+  google: {
+    apiKey: env('GOOGLE_API_KEY'),
+    llmModel: env('GOOGLE_LLM_MODEL', 'gemini-2.5-flash')!,
+    imageModel: env('GOOGLE_IMAGE_MODEL', 'imagen-3.0-generate-002')!,
   },
   elevenLabs: {
     apiKey: env('ELEVENLABS_API_KEY'),

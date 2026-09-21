@@ -19,17 +19,23 @@ async function main() {
 
   await writeFile(`${base}.txt`, result.storyText);
   await writeFile(`${base}.${ext}`, result.audio);
+
+  const sceneManifest = result.scenes.map((scene, i) => ({
+    text: scene.text,
+    imagePrompt: scene.imagePrompt,
+    imageFile: scene.image ? `${path.basename(base)}.image-${i}.${scene.image.extension}` : null,
+  }));
+  await writeFile(`${base}.scenes.json`, JSON.stringify(sceneManifest, null, 2));
   await Promise.all(
-    result.images.map((img, i) => writeFile(`${base}.image-${i}.${img.extension}`, img.buffer)),
+    result.scenes.map((scene, i) =>
+      scene.image ? writeFile(`${base}.image-${i}.${scene.image.extension}`, scene.image.buffer) : Promise.resolve(),
+    ),
   );
 
+  const illustrated = result.scenes.filter((s) => s.image).length;
   console.log(`Story text: ${base}.txt`);
   console.log(`Audio (${result.outputFormat}): ${base}.${ext}`);
-  if (result.images.length) {
-    console.log(`Illustrations: ${base}.image-0.${result.images[0].extension} .. (${result.images.length} total)`);
-  } else {
-    console.log('No illustrations (workflow produced no "images" output, or none downloaded successfully).');
-  }
+  console.log(`Scenes: ${base}.scenes.json (${illustrated}/${result.scenes.length} illustrated)`);
 }
 
 main().catch((err) => {
