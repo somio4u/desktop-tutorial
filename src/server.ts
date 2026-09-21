@@ -11,6 +11,7 @@ const audioExtensionFor = (format: string) => (format.startsWith('pcm') ? 'pcm' 
 
 const app = express();
 app.use(express.json());
+app.use(express.static(path.resolve('public')));
 
 app.post('/api/stories', async (req, res) => {
   const { prompt, genre, voiceId, outputFormat } = req.body as Partial<CreateStoryOptions>;

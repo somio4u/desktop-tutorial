@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Story Creator</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="page">
+    <h1>Story Creator</h1>
+    <p class="subtitle">Prompt in, illustrated audiobook out.</p>
+
+    <form id="story-form">
+      <label>
+        Prompt
+        <textarea id="prompt" rows="3" placeholder="A lighthouse keeper finds a message in a bottle from the future" required></textarea>
+      </label>
+
+      <div class="row">
+        <label>
+          Genre <span class="optional">(optional)</span>
+          <input id="genre" type="text" placeholder="fantasy" />
+        </label>
+        <label>
+          Voice ID <span class="optional">(optional, uses server default)</span>
+          <input id="voiceId" type="text" placeholder="ElevenLabs voice ID" />
+        </label>
+        <label>
+          Audio format
+          <select id="outputFormat">
+            <option value="mp3_44100_128" selected>MP3 (playable here)</option>
+            <option value="pcm_44100">Raw PCM 44.1kHz (download only)</option>
+            <option value="pcm_24000">Raw PCM 24kHz (download only)</option>
+          </select>
+        </label>
+      </div>
+
+      <button id="submit-btn" type="submit">Generate story</button>
+    </form>
+
+    <div id="status" class="status" hidden></div>
+
+    <section id="result" class="result" hidden>
+      <h2>Audiobook</h2>
+      <audio id="audio-player" controls hidden></audio>
+      <a id="audio-download" class="download-link" hidden>Download audio file</a>
+
+      <h2>Scenes</h2>
+      <div id="scenes" class="scenes"></div>
+
+      <details class="full-text">
+        <summary>Full story text</summary>
+        <p id="story-text"></p>
+      </details>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
