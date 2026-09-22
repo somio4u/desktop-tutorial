@@ -118,3 +118,57 @@ be real custom/cloned voices from a specific account, or they may not exist.
 An invalid ID fails at synthesis time with a 400/404 from ElevenLabs, not
 before, so check these 7 first if `cast-demo` or the main pipeline errors on
 a specific character's line.
+
+## Full production script (`src/production/`, `src/pipeline/productionPipeline.ts`)
+
+A separate, heavier pipeline that turns a one-line premise into a full
+multi-track production script — dialogue cue sheet, BGM progression, SFX cue
+sheet, and a 5-second-interval visual beat sheet — as one JSON document (see
+`src/production/types.ts` for the exact shape: `metadata`, `asset_manifest`,
+`voice_track`, `bgm_track`, `sfx_track`, `visual_track`).
+
+**What's real vs. what's a deliverable spec, not generated media:**
+- `voice_track` — real: Gemini writes the dialogue/narration + per-line
+  pacing/emotion, and `npm run produce -- "..." --with-narration` (or
+  `POST /api/production/:id/narration`) actually synthesizes each line
+  through ElevenLabs (`src/production/narrationSynth.ts`), mapping
+  `pacing_wps` to ElevenLabs' `speed` setting. Note: ElevenLabs doesn't let
+  you dictate an exact output duration, so real audio length can drift from
+  the script's planned `start_time`/`end_time` — treat those as a
+  pre-visualization/sync-planning aid, not a guarantee.
+- `bgm_track` / `sfx_track` — cue-sheet **data only**: structured
+  directives (mood, transitions, instrumentation, generative prompts) meant
+  to be fed into an external music/SFX generator (Suno, Udio, a procedural
+  SFX tool). Nothing in this repo calls those services; there's no
+  integration for them.
+- `visual_track` — one `image_generation_prompt` per 5-second interval
+  (continuity-tagged against `asset_manifest`). These are prompts only; the
+  pipeline doesn't batch-generate images for every interval (a 10-minute
+  script is 120 of them — expensive and slow to do by default). You can feed
+  any of these prompts through the existing `src/clients/imagenClient.ts` by
+  hand if you want a specific one rendered.
+
+**Casting is never trusted from the model.** Gemini is given the real
+`src/data/voices.ts` roster by name and told to assign from it, but
+`src/production/castResolver.ts` always re-resolves every `voice_id`
+against that roster afterward (falling back to the same tone-matching engine
+from Voice Studio if a name is invalid or duplicated) — so a hallucinated ID
+never reaches ElevenLabs.
+
+```bash
+npm run produce -- "A lighthouse keeper finds a message in a bottle from the future" --duration 5 --genre mystery
+# writes output/productions/production-<ts>.json
+# add --with-narration to also synthesize the voice track (output/productions/production-<ts>-voice-lines/)
+# --narrator <VoiceName> to pick who narrates (default: Raju)
+```
+
+Or via the API: `POST /api/production/script` with
+`{ premise, durationMinutes, genre?, language?, narratorVoiceName? }` returns
+`{ id, script, warnings }`; then `POST /api/production/:id/narration`
+synthesizes and returns URLs for each line's audio.
+
+Longer durations mean a much larger single JSON response (120 visual
+intervals + dozens of dialogue lines for 10 minutes) — if Gemini's output
+gets truncated by the token limit, `generateProductionScript` will report it
+as a parse failure; the `warnings` array also flags if the visual track
+didn't come back with exactly one entry per 5 seconds.

@@ -2,8 +2,11 @@ import { VOICES, type AgeBracket, type Gender, type VoiceProfile } from '../data
 
 export interface CharacterProfile {
   name: string;
-  gender: Gender;
-  ageBracket: AgeBracket;
+  // Optional: callers that only have free text (e.g. a visual description,
+  // no structured demographics) can omit these and matching falls back to
+  // tone/archetype keyword overlap alone.
+  gender?: Gender;
+  ageBracket?: AgeBracket;
   // Free text describing how the character talks/behaves, e.g. "fast-talking,
   // sarcastic" or "anxious, soft-spoken" — matched against each voice's
   // baseTone/emotionalTone/archetypes.
@@ -26,10 +29,12 @@ function words(text: string | undefined): string[] {
 function scoreVoice(voice: VoiceProfile, character: CharacterProfile): number {
   let score = 0;
 
-  if (voice.gender === character.gender) score += 40;
+  if (!character.gender) score += 10;
+  else if (voice.gender === character.gender) score += 40;
   else if (isNeutral(voice.gender)) score += 25;
 
-  if (voice.ageBracket === character.ageBracket) score += 30;
+  if (!character.ageBracket) score += 10;
+  else if (voice.ageBracket === character.ageBracket) score += 30;
 
   const characterWords = new Set([...words(character.style), ...words(character.mood), ...words(character.description)]);
   const voiceWords = new Set([voice.baseTone, ...voice.emotionalTone, ...voice.archetypes].flatMap((w) => words(w)));
@@ -54,10 +59,10 @@ export function suggestVoices(character: CharacterProfile, options: SuggestOptio
   const excluded = new Set(options.exclude ?? []);
   const limit = options.limit ?? 5;
 
-  const matchesGender = (v: VoiceProfile) => v.gender === character.gender || isNeutral(v.gender);
+  const matchesGender = (v: VoiceProfile) => !character.gender || v.gender === character.gender || isNeutral(v.gender);
   const available = VOICES.filter((v) => !excluded.has(v.voiceName) && matchesGender(v));
 
-  const sameAgeBracket = available.filter((v) => v.ageBracket === character.ageBracket);
+  const sameAgeBracket = character.ageBracket ? available.filter((v) => v.ageBracket === character.ageBracket) : available;
   const pool = sameAgeBracket.length > 0 ? sameAgeBracket : available;
 
   return pool

@@ -5,6 +5,7 @@ import path from 'node:path';
 import { castingRouter } from './castingRoutes.js';
 import { config } from './config.js';
 import { createStory, type CreateStoryOptions } from './pipeline/storyPipeline.js';
+import { productionRouter } from './productionRoutes.js';
 
 const OUTPUT_DIR = path.resolve('output');
 
@@ -14,6 +15,7 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.resolve('public')));
 app.use('/api', castingRouter);
+app.use('/api', productionRouter);
 
 app.post('/api/stories', async (req, res) => {
   const { prompt, genre, voiceId, outputFormat } = req.body as Partial<CreateStoryOptions>;
