@@ -2,7 +2,8 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { produceScript } from './pipeline/productionPipeline.js';
 import { synthesizeNarration } from './production/narrationSynth.js';
-import { concatenateNarration, renderMasterAudio } from './production/masterMix.js';
+import { concatenateNarration, parseTimestamp, renderMasterAudio, renderSfxTrack, type SfxMixClip } from './production/masterMix.js';
+import { synthesizeSfxTrack } from './production/sfxSynth.js';
 
 function parseArgs(argv: string[]) {
   const positional: string[] = [];
@@ -30,7 +31,7 @@ async function main() {
   if (!premise) {
     console.error(
       'Usage: npm run produce -- "<premise>" [--duration 5] [--genre fantasy] [--lang English] ' +
-        '[--narrator Raju] [--with-narration] [--bgm act1.mp3,act2.mp3[,act3.mp3]]',
+        '[--narrator Raju] [--with-narration] [--with-sfx] [--bgm act1.mp3,act2.mp3[,act3.mp3]]',
     );
     process.exit(1);
   }
@@ -75,8 +76,35 @@ async function main() {
   console.log(`Voice lines: ${voiceLinesDir}/`);
 
   const bgmFlag = flags.bgm;
+  const wantsSfx = Boolean(flags['with-sfx']) || typeof bgmFlag === 'string';
+
+  let sfxClipPaths: SfxMixClip[] = [];
+  if (wantsSfx) {
+    console.log('Generating sound effects (ElevenLabs sound-generation: foley, ambiance, stingers, inline cues)...');
+    const clips = await synthesizeSfxTrack(script);
+    const sfxDir = `${base}-sfx-clips`;
+    await mkdir(sfxDir, { recursive: true });
+    sfxClipPaths = [];
+    for (const clip of clips) {
+      const filePath = path.join(sfxDir, `${clip.id}.mp3`);
+      await writeFile(filePath, clip.buffer);
+      sfxClipPaths.push({
+        filePath,
+        startSeconds: clip.startSeconds,
+        volumeDb: clip.volumeDb,
+        loop: clip.loop,
+        targetDurationSeconds: clip.targetDurationSeconds,
+      });
+    }
+    console.log(`SFX clips: ${sfxDir}/ (${sfxClipPaths.length}/${script.sfx_track.length + script.voice_track.flatMap((l) => l.inline_sfx).length} generated)`);
+  }
+
   if (typeof bgmFlag !== 'string') {
-    console.log('(pass --bgm act1.mp3,act2.mp3[,act3.mp3] — your own Suno/Udio renders of bgm_track\'s prompts — to mix a master file)');
+    if (!wantsSfx) {
+      console.log('(pass --with-sfx to also generate sound effects, or --bgm act1.mp3,act2.mp3[,act3.mp3] to mix a master file)');
+    } else {
+      console.log('(pass --bgm act1.mp3,act2.mp3[,act3.mp3] — your own Suno/Udio renders of bgm_track\'s prompts — to mix a master file)');
+    }
     return;
   }
 
@@ -86,11 +114,15 @@ async function main() {
     return;
   }
 
-  console.log('Mixing master audio (ffmpeg: cross-fading BGM acts, ducking under narration)...');
+  console.log('Mixing master audio (ffmpeg: cross-fading BGM acts, mixing SFX bed, ducking under narration)...');
   const narrationPath = `${base}-narration.mp3`;
   await concatenateNarration(lines, `${base}-mix-tmp`, narrationPath);
+
+  const sfxBedPath = `${base}-sfx-bed.mp3`;
+  await renderSfxTrack(sfxClipPaths, parseTimestamp(script.metadata.total_duration), sfxBedPath);
+
   const masterPath = `${base}-master.mp3`;
-  await renderMasterAudio(narrationPath, bgmPaths, masterPath);
+  await renderMasterAudio(narrationPath, sfxBedPath, bgmPaths, masterPath);
   console.log(`Master mix: ${masterPath}`);
 }
 

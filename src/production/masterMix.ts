@@ -27,7 +27,7 @@ function runFfmpeg(args: string[]): Promise<void> {
 }
 
 // "MM:SS" or "HH:MM:SS" -> total seconds.
-function parseTimestamp(ts: string): number {
+export function parseTimestamp(ts: string): number {
   const parts = ts.split(':').map(Number);
   if (parts.some((p) => Number.isNaN(p))) {
     throw new Error(`Could not parse timestamp "${ts}"`);
@@ -69,24 +69,58 @@ export async function concatenateNarration(lines: SynthesizedLine[], workDir: st
   ]);
 }
 
+export interface SfxMixClip {
+  filePath: string;
+  startSeconds: number;
+  volumeDb: number;
+  // Looped clips are shorter than their target on-screen duration (ElevenLabs
+  // sound-generation caps at 30s) and get tiled with ffmpeg's -stream_loop,
+  // then cut back down to targetDurationSeconds.
+  loop: boolean;
+  targetDurationSeconds: number;
+}
+
+// Places every SFX clip (standalone ambiance/foley/stingers, plus every
+// inline mid-dialogue cue) at its computed timestamp and mixes them into one
+// continuous bed spanning the story's full runtime. Produces a silent track
+// if there are no clips, so the final mix always has three well-formed
+// inputs to work with.
+export async function renderSfxTrack(clips: SfxMixClip[], totalDurationSeconds: number, outputPath: string): Promise<void> {
+  if (clips.length === 0) {
+    await runFfmpeg(['-y', '-f', 'lavfi', '-i', `anullsrc=r=44100:cl=stereo:d=${totalDurationSeconds}`, outputPath]);
+    return;
+  }
+
+  const inputArgs = clips.flatMap((c) => (c.loop ? ['-stream_loop', '-1', '-i', c.filePath] : ['-i', c.filePath]));
+  const chains = clips.map((c, i) => {
+    const delayMs = Math.round(c.startSeconds * 1000);
+    const trim = c.loop ? `atrim=duration=${c.targetDurationSeconds},` : '';
+    return `[${i}:a]${trim}adelay=${delayMs}:all=1,volume=${c.volumeDb}dB[sfx${i}]`;
+  });
+  const mixInputs = clips.map((_, i) => `[sfx${i}]`).join('');
+  const filterComplex = [...chains, `${mixInputs}amix=inputs=${clips.length}:normalize=0:duration=longest[out]`].join(';');
+
+  await runFfmpeg(['-y', ...inputArgs, '-filter_complex', filterComplex, '-map', '[out]', '-b:a', '192k', outputPath]);
+}
+
 // Cross-fades the BGM act files in sequence, ducks the result under the
-// narration track (sidechain compression, per the -12dB/attack/release
-// convention from the spec), and mixes the two into one master file.
-export async function renderMasterAudio(narrationPath: string, bgmPaths: string[], outputPath: string): Promise<void> {
+// narration track (sidechain compression), and blends narration + SFX bed +
+// ducked BGM into the final master — narration and SFX at full/near-full
+// presence, BGM well underneath, matching the 3-layer mix the SFX design
+// calls for (voice foreground, SFX midground, BGM background).
+export async function renderMasterAudio(narrationPath: string, sfxPath: string, bgmPaths: string[], outputPath: string): Promise<void> {
   if (bgmPaths.length < 1) {
     throw new Error('renderMasterAudio needs at least one BGM file.');
   }
 
-  let bgmFilter: string;
-  let bgmLabel: string;
-  if (bgmPaths.length === 1) {
-    bgmFilter = '';
-    bgmLabel = '[1:a]';
-  } else {
+  const BGM_INPUT_START = 2; // 0 = narration, 1 = sfx bed
+  let bgmFilter = '';
+  let bgmLabel = `[${BGM_INPUT_START}:a]`;
+  if (bgmPaths.length > 1) {
     const stages: string[] = [];
-    let prevLabel = '[1:a]';
+    let prevLabel = bgmLabel;
     for (let i = 1; i < bgmPaths.length; i++) {
-      const nextInput = `[${i + 1}:a]`;
+      const nextInput = `[${BGM_INPUT_START + i}:a]`;
       const outLabel = i === bgmPaths.length - 1 ? '[bgm_full]' : `[bgm${i}]`;
       stages.push(`${prevLabel}${nextInput}acrossfade=d=${CROSSFADE_SECONDS}:c1=tri:c2=tri${outLabel}`);
       prevLabel = outLabel;
@@ -97,10 +131,10 @@ export async function renderMasterAudio(narrationPath: string, bgmPaths: string[
 
   const filterComplex =
     `${bgmFilter}` +
-    `${bgmLabel}[0:a]sidechaincompress=threshold=0.03:ratio=8:attack=200:release=1000[ducked_bgm];` +
-    `[0:a][ducked_bgm]amix=inputs=2:duration=first:dropout_transition=2[outa]`;
+    `${bgmLabel}[0:a]sidechaincompress=threshold=0.03:ratio=8:attack=150:release=800[ducked_bgm];` +
+    `[0:a][1:a][ducked_bgm]amix=inputs=3:weights=1.0 0.85 0.5:duration=longest[outa]`;
 
-  const inputArgs = [narrationPath, ...bgmPaths].flatMap((p) => ['-i', p]);
+  const inputArgs = [narrationPath, sfxPath, ...bgmPaths].flatMap((p) => ['-i', p]);
 
   await runFfmpeg(['-y', ...inputArgs, '-filter_complex', filterComplex, '-map', '[outa]', '-b:a', '320k', outputPath]);
 }

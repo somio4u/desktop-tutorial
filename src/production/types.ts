@@ -41,6 +41,20 @@ export interface ElevenLabsLineSettings {
   similarity_boost: number;
 }
 
+// A sound cued to trigger mid-line (e.g. glasses clinking right as a
+// character says "cheers"). script_content carries a matching <SFX:tag>
+// token at the point in the text where it happens; that token is stripped
+// before the line is sent to TTS (see production/inlineSfx.ts) and used
+// here only to place the generated sound effect at
+// (line's start_time + relative_offset_seconds).
+export interface InlineSfxCue {
+  tag: string;
+  relative_offset_seconds: number;
+  sfx_prompt: string;
+  duration: number;
+  volume_offset_db: number;
+}
+
 export interface VoiceTrackEntry {
   index: number;
   start_time: string;
@@ -51,7 +65,7 @@ export interface VoiceTrackEntry {
   emotion: string;
   elevenlabs_settings: ElevenLabsLineSettings;
   script_content: string;
-  sync_sfx_trigger?: string | null;
+  inline_sfx: InlineSfxCue[];
 }
 
 export interface BgmTrackEntry {
@@ -65,6 +79,9 @@ export interface BgmTrackEntry {
   generative_prompt: string;
 }
 
+// DIEGETIC_FOREGROUND = spot/foley SFX (synced to a physical action),
+// DIEGETIC_BACKGROUND = continuous ambiance bed (crickets, crowd, wind),
+// NON_DIEGETIC = dramatic stingers (risers, sub-bass drops).
 export type SfxLayer = 'DIEGETIC_FOREGROUND' | 'DIEGETIC_BACKGROUND' | 'NON_DIEGETIC';
 
 export interface SfxTrackEntry {
@@ -72,8 +89,15 @@ export interface SfxTrackEntry {
   timestamp: string;
   type: SfxLayer;
   sound_name: string;
+  // dB string, e.g. "-4dB" — foreground/foley -3 to -6dB, background/ambiance
+  // -14 to -18dB, non-diegetic stingers as the moment calls for.
   mix_gain: string;
   generative_prompt: string;
+  // ElevenLabs sound-generation clamps a single call to 0.5-30s. For an
+  // ambiance bed that needs to run longer than that, set loop: true and the
+  // mixer tiles the generated clip to fill duration_seconds.
+  duration_seconds: number;
+  loop: boolean;
 }
 
 export interface VisualTrackEntry {

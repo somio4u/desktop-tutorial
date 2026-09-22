@@ -1,4 +1,5 @@
 import { synthesizeSpeech } from '../clients/elevenLabsClient.js';
+import { stripInlineSfxTags } from './inlineSfx.js';
 import type { ProductionScript, VoiceTrackEntry } from './types.js';
 
 // ElevenLabs' speed range is roughly 0.7-1.2. 2.6 wps is a natural
@@ -20,7 +21,7 @@ export interface SynthesizedLine {
 export async function synthesizeNarration(script: ProductionScript): Promise<SynthesizedLine[]> {
   const results: SynthesizedLine[] = [];
   for (const line of script.voice_track) {
-    const audio = await synthesizeSpeech(line.script_content, {
+    const audio = await synthesizeSpeech(stripInlineSfxTags(line.script_content), {
       voiceId: line.voice_id,
       outputFormat: 'mp3_44100_128',
       voiceSettings: {

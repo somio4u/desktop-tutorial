@@ -57,3 +57,38 @@ export async function synthesizeSpeech(text: string, options: SynthesizeOptions 
 
   return Buffer.from(await res.arrayBuffer());
 }
+
+export interface SoundEffectOptions {
+  durationSeconds?: number;
+  promptInfluence?: number;
+}
+
+// ElevenLabs' text-to-sound-effects endpoint (distinct from TTS): foley,
+// ambiance beds, stingers. Same API key/billing as voice synthesis.
+export async function generateSoundEffect(prompt: string, options: SoundEffectOptions = {}): Promise<Buffer> {
+  if (!config.elevenLabs.apiKey) {
+    throw new Error('ELEVENLABS_API_KEY is not set.');
+  }
+  // The API clamps to 0.5-30s; clamp here too so a bad duration fails
+  // obviously rather than as an opaque 400 from ElevenLabs.
+  const durationSeconds = options.durationSeconds !== undefined ? Math.min(30, Math.max(0.5, options.durationSeconds)) : undefined;
+
+  const res = await fetch('https://api.elevenlabs.io/v1/sound-generation', {
+    method: 'POST',
+    headers: {
+      'xi-api-key': config.elevenLabs.apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      text: prompt,
+      ...(durationSeconds !== undefined && { duration_seconds: durationSeconds }),
+      prompt_influence: options.promptInfluence ?? 0.5,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`ElevenLabs sound-generation failed: ${res.status} ${await res.text()}`);
+  }
+
+  return Buffer.from(await res.arrayBuffer());
+}

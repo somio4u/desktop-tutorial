@@ -52,6 +52,18 @@ const PROP_SCHEMA = {
   required: ['id', 'name', 'visual_description'],
 };
 
+const INLINE_SFX_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    tag: { type: 'STRING' },
+    relative_offset_seconds: { type: 'NUMBER' },
+    sfx_prompt: { type: 'STRING' },
+    duration: { type: 'NUMBER' },
+    volume_offset_db: { type: 'NUMBER' },
+  },
+  required: ['tag', 'relative_offset_seconds', 'sfx_prompt', 'duration', 'volume_offset_db'],
+};
+
 const VOICE_TRACK_SCHEMA = {
   type: 'OBJECT',
   properties: {
@@ -71,9 +83,9 @@ const VOICE_TRACK_SCHEMA = {
       required: ['stability', 'similarity_boost'],
     },
     script_content: { type: 'STRING' },
-    sync_sfx_trigger: { type: 'STRING' },
+    inline_sfx: { type: 'ARRAY', items: INLINE_SFX_SCHEMA },
   },
-  required: ['index', 'start_time', 'end_time', 'speaker', 'voice_id', 'pacing_wps', 'emotion', 'elevenlabs_settings', 'script_content'],
+  required: ['index', 'start_time', 'end_time', 'speaker', 'voice_id', 'pacing_wps', 'emotion', 'elevenlabs_settings', 'script_content', 'inline_sfx'],
 };
 
 const BGM_TRACK_SCHEMA = {
@@ -100,8 +112,10 @@ const SFX_TRACK_SCHEMA = {
     sound_name: { type: 'STRING' },
     mix_gain: { type: 'STRING' },
     generative_prompt: { type: 'STRING' },
+    duration_seconds: { type: 'NUMBER' },
+    loop: { type: 'BOOLEAN' },
   },
-  required: ['sfx_id', 'timestamp', 'type', 'sound_name', 'mix_gain', 'generative_prompt'],
+  required: ['sfx_id', 'timestamp', 'type', 'sound_name', 'mix_gain', 'generative_prompt', 'duration_seconds', 'loop'],
 };
 
 const VISUAL_TRACK_SCHEMA = {
@@ -216,6 +230,7 @@ TIMING & PACING STANDARD
 - Leave 0.3s between speaker turns, 0.8-1.2s for heavy dramatic beats.
 - Use the pacing_wps value that matches each line's actual delivery style, and make start_time/end_time consistent with script_content's word count at that pace.
 - voice_track timestamps must be contiguous and non-overlapping, covering the full ${totalDuration}.
+- inline_sfx: every line MUST have this field, [] if the line has no mid-line action sound. When a physical action happens mid-sentence (a glass set down, a door creaking, a slap, footsteps starting), insert a "<SFX:UNIQUE_TAG>" token directly in script_content at the exact point the action happens (UNIQUE_TAG uppercase/underscored, e.g. <SFX:GLASS_SET_DOWN_01>), and add a matching object to inline_sfx with that same tag, a relative_offset_seconds (seconds from this line's own start_time to when the tag falls, based on the words before it at this line's pacing_wps), a short literal sfx_prompt, a duration (0.5-3s for a spot effect), and a volume_offset_db around -3 to -6 (foley sits just under dialogue). Do not overuse this — only for actions the audience should distinctly hear, not every line.
 
 BGM PROGRESSION (critical — never run one track across the whole story)
 A single mood running the whole runtime induces auditory fatigue and ignores the story's emotional acts. Produce EXACTLY ${bgmActs.length} bgm_track blocks, one per act below, using EXACTLY these start_time/end_time/transition values (do not change the timings or add/remove blocks — those are fixed so the acts overlap by a ${CROSSFADE_SECONDS}s cross-fade window rather than cutting abruptly):
@@ -227,10 +242,13 @@ For each block, you fill in:
 - generative_prompt: a Suno/Udio-ready prompt for an INSTRUMENTAL cue that keeps the midrange clear for spoken narration. It MUST start with "[Instrumental]" and MUST include "no vocals" — never write anything a music generator could render as sung lyrics. Specify genre/mood, tempo or BPM, and 2-4 concrete instruments (e.g. "[Instrumental], dark cinematic thriller, rising tension strings, tribal earthen percussion, dramatic crescendo, eerie atmosphere, no vocals").
 - Each act's prompt should escalate/shift from the previous one to track the story's emotional arc (e.g. calm exposition → rising tension → climax/resolution), not just repeat the same mood with different words.
 
-SFX
-- Every meaningful diegetic or non-diegetic sound gets an entry with an exact timestamp within the runtime.
-- type is DIEGETIC_FOREGROUND, DIEGETIC_BACKGROUND, or NON_DIEGETIC.
-- generative_prompt must be a concrete, literal sound description usable by a text-to-audio SFX generator.
+SFX (standalone cues — for sounds NOT tied to a specific mid-line action; those go in inline_sfx above)
+Classify every standalone cue into exactly one of three layers, and set mix_gain to a dB string in that layer's range:
+- DIEGETIC_FOREGROUND — spot/foley tied to an action but not worth an inline cue (or spanning a whole non-dialogue moment): mix_gain -3dB to -6dB.
+- DIEGETIC_BACKGROUND — continuous ambiance bed running under a scene (crickets, crowd murmur, wind, rain): mix_gain -14dB to -18dB. Set loop: true and duration_seconds to however long the bed should actually run (it will be tiled from a shorter generated clip if needed) — this is the one case duration_seconds may exceed 30.
+- NON_DIEGETIC — dramatic stingers (riser, sub-bass drop, reverse cymbal) marking a beat/reveal: mix_gain to taste, usually -2dB to -8dB.
+- duration_seconds for anything except a looped ambiance bed must be between 0.5 and 30 (the SFX generator's hard limit).
+- generative_prompt must be a concrete, literal sound description usable by a text-to-audio SFX generator (e.g. "rural night ambiance, crickets chirping steadily, distant owl call, soft wind").
 
 VISUAL BEATS (critical — do not skip)
 - Produce EXACTLY ${intervalCount} visual_track entries, one per 5-second interval, covering 00:00 to ${totalDuration} with no gaps and no overlaps.
