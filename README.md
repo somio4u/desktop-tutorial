@@ -66,3 +66,25 @@ concatenated back into one file. Gemini generates 3-6 scenes per story, each
 with its own image prompt; if Imagen fails for a given scene (e.g. rate
 limit, safety filter), that scene is returned with `image: null` / a `null`
 `imageUrl` rather than failing the whole request.
+
+## Multi-character casting (`src/casting/`)
+
+For dialogue-driven scripts (narrator + multiple speaking characters),
+`CastingManager` (`src/casting/castingManager.ts`) auto-assigns each
+character a distinct voice from `src/data/voices.ts`, matched by
+gender/age-bracket/tone, and bans it from being reused by another character
+in the same project (the narrator's voice is banned automatically). Each
+line is then synthesized with emotion-tuned `stability`/`similarity_boost`
+settings (`src/casting/voiceSettings.ts`).
+
+This isn't wired into the main story pipeline yet (which narrates the whole
+story in one voice) — it's a standalone module for scripts that already have
+`{ speaker, text, emotion }` lines. Try it with the built-in demo:
+
+```bash
+npm run cast-demo
+```
+
+Note: `src/data/voices.ts` entries need a real ElevenLabs `voiceId` filled in
+before synthesis will work — without one, `CastingManager` still runs the
+casting/banning logic but throws when you ask for an actual voice ID.

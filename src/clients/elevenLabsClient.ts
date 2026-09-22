@@ -7,10 +7,16 @@ export type OutputFormat =
   | 'pcm_24000'
   | 'pcm_44100';
 
+export interface VoiceSettingsOption {
+  stability: number;
+  similarityBoost: number;
+}
+
 export interface SynthesizeOptions {
   voiceId?: string;
   outputFormat?: OutputFormat;
   modelId?: string;
+  voiceSettings?: VoiceSettingsOption;
 }
 
 export async function synthesizeSpeech(text: string, options: SynthesizeOptions = {}): Promise<Buffer> {
@@ -31,7 +37,16 @@ export async function synthesizeSpeech(text: string, options: SynthesizeOptions 
       'xi-api-key': config.elevenLabs.apiKey,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ text, model_id: modelId }),
+    body: JSON.stringify({
+      text,
+      model_id: modelId,
+      ...(options.voiceSettings && {
+        voice_settings: {
+          stability: options.voiceSettings.stability,
+          similarity_boost: options.voiceSettings.similarityBoost,
+        },
+      }),
+    }),
   });
 
   if (!res.ok) {
