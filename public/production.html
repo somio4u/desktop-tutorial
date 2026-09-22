@@ -9,7 +9,7 @@
 </head>
 <body>
   <main class="page wide">
-    <h1>Production Timeline</h1>
+    <h1>Production Timelines</h1>
     <p class="subtitle">
       <a href="/">Story Creator</a> &middot; <a href="/casting.html">Voice Studio</a> &middot; <a href="/studio.html">BYOK Studio</a>
     </p>
@@ -41,34 +41,48 @@
 
     <div id="status" class="status" hidden></div>
 
-    <section id="timeline-section" class="card" hidden>
+    <section id="timeline-section" hidden>
       <h2 id="timeline-title">Timeline</h2>
       <p id="timeline-meta" class="optional"></p>
 
-      <div id="ruler" class="ruler"></div>
-
-      <div class="lane">
-        <div class="lane-label">Voice</div>
-        <div id="lane-voice" class="lane-track"></div>
-      </div>
-      <div class="lane">
-        <div class="lane-label">SFX</div>
-        <div id="lane-sfx" class="lane-track"></div>
-      </div>
-      <div class="lane">
-        <div class="lane-label">BGM<br /><span class="optional">(Suno — upload)</span></div>
-        <div id="lane-bgm" class="lane-track"></div>
+      <div class="card timeline-widget">
+        <h3>Video timeline <span class="optional">(one image per 5s interval)</span></h3>
+        <div id="video-ruler" class="ruler"></div>
+        <div class="lane">
+          <div class="lane-label">Images</div>
+          <div id="lane-video" class="lane-track video-track"></div>
+        </div>
+        <div class="row actions">
+          <button type="button" id="gen-visuals-btn">Generate images (Imagen)</button>
+        </div>
       </div>
 
-      <div class="row actions">
-        <button type="button" id="gen-narration-btn">1. Generate narration (ElevenLabs)</button>
-        <button type="button" id="gen-sfx-btn">2. Generate SFX (ElevenLabs)</button>
-        <button type="button" id="mix-btn" disabled>3. Mix master (needs all BGM uploaded)</button>
-      </div>
+      <div class="card timeline-widget">
+        <h3>Audio timeline <span class="optional">(Voice / SFX / BGM)</span></h3>
+        <div id="audio-ruler" class="ruler"></div>
+        <div class="lane">
+          <div class="lane-label">Voice</div>
+          <div id="lane-voice" class="lane-track"></div>
+        </div>
+        <div class="lane">
+          <div class="lane-label">SFX</div>
+          <div id="lane-sfx" class="lane-track"></div>
+        </div>
+        <div class="lane">
+          <div class="lane-label">BGM<br /><span class="optional">(Suno — upload)</span></div>
+          <div id="lane-bgm" class="lane-track"></div>
+        </div>
 
-      <div id="master-result" hidden>
-        <h3>Master mix</h3>
-        <audio id="master-audio" controls></audio>
+        <div class="row actions">
+          <button type="button" id="gen-narration-btn">1. Generate narration (ElevenLabs)</button>
+          <button type="button" id="gen-sfx-btn">2. Generate SFX (ElevenLabs)</button>
+          <button type="button" id="mix-btn" disabled>3. Mix master (needs all BGM uploaded)</button>
+        </div>
+
+        <div id="master-result" hidden>
+          <h4>Master mix</h4>
+          <audio id="master-audio" controls></audio>
+        </div>
       </div>
     </section>
 

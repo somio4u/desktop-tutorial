@@ -7,6 +7,7 @@ import { concatenateNarration, parseTimestamp, renderMasterAudio, renderSfxTrack
 import { synthesizeNarration, type SynthesizedLine } from './production/narrationSynth.js';
 import { synthesizeSfxTrack } from './production/sfxSynth.js';
 import type { ProductionScript } from './production/types.js';
+import { synthesizeVisualFrames } from './production/visualSynth.js';
 
 interface SfxManifestEntry {
   id: string;
@@ -46,6 +47,12 @@ productionRouter.get('/production/:id', async (req, res) => {
       .then(() => true)
       .catch(() => false);
 
+    const frameFiles = await readdir(path.join(projectDir, 'visual-frames')).catch(() => [] as string[]);
+    const visualFrames = script.visual_track.map((entry) => {
+      const fileName = frameFiles.find((f) => f.startsWith(`${entry.interval_index}.`));
+      return { index: entry.interval_index, generated: Boolean(fileName), fileName: fileName ?? null };
+    });
+
     res.json({
       id: req.params.id,
       script,
@@ -53,6 +60,7 @@ productionRouter.get('/production/:id', async (req, res) => {
         hasNarration: await fileExistsNonEmpty(path.join(projectDir, 'voice-lines')),
         hasSfx: await fileExistsNonEmpty(path.join(projectDir, 'sfx-clips')),
         bgmActs,
+        visualFrames,
         hasMaster: masterExists,
       },
     });
@@ -154,6 +162,41 @@ productionRouter.post('/production/:id/sfx', async (req, res) => {
 
 productionRouter.get('/production/:id/sfx-clips/:file', async (req, res) => {
   const dir = path.join(OUTPUT_DIR, req.params.id, 'sfx-clips');
+  const files = await readdir(dir).catch(() => [] as string[]);
+  if (!files.includes(req.params.file)) {
+    res.status(404).json({ error: 'not found' });
+    return;
+  }
+  res.sendFile(path.join(dir, req.params.file));
+});
+
+// Generates one image per visual_track interval (Imagen) for the video
+// timeline. Opt-in and explicit — a 10-minute story is 120 intervals, too
+// expensive/slow to generate automatically. Failed intervals are skipped
+// with a warning rather than failing the whole batch.
+productionRouter.post('/production/:id/visuals', async (req, res) => {
+  try {
+    const raw = await readFile(path.join(OUTPUT_DIR, `${req.params.id}.json`), 'utf-8');
+    const script = JSON.parse(raw) as ProductionScript;
+    const frames = await synthesizeVisualFrames(script);
+
+    const dir = path.join(OUTPUT_DIR, req.params.id, 'visual-frames');
+    await mkdir(dir, { recursive: true });
+    const frameUrls: string[] = [];
+    for (const frame of frames) {
+      const fileName = `${frame.index}.png`;
+      await writeFile(path.join(dir, fileName), frame.buffer);
+      frameUrls.push(`/api/production/${req.params.id}/visual-frames/${fileName}`);
+    }
+
+    res.json({ id: req.params.id, generated: frames.length, requested: script.visual_track.length, frameUrls });
+  } catch (err) {
+    res.status(502).json({ error: (err as Error).message });
+  }
+});
+
+productionRouter.get('/production/:id/visual-frames/:file', async (req, res) => {
+  const dir = path.join(OUTPUT_DIR, req.params.id, 'visual-frames');
   const files = await readdir(dir).catch(() => [] as string[]);
   if (!files.includes(req.params.file)) {
     res.status(404).json({ error: 'not found' });

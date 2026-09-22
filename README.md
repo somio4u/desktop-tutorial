@@ -256,30 +256,41 @@ foreground, SFX midground, BGM background) the design calls for. If
 `ffmpeg` isn't installed, every entry point fails with a clear message
 telling you to install it rather than a cryptic spawn error.
 
-### Timeline UI (`public/production.html`)
+### Timeline UI (`public/production.html`) — two separate timelines
 
-A browser view of the whole production script as one timeline instead of
-raw JSON: enter a premise/duration/genre/narrator, generate the script, and
-see three lanes laid out proportionally across the runtime — **Voice**
-(each dialogue/narration line), **SFX** (standalone cues in one shade,
-inline mid-dialogue cues in another), and **BGM** (each act block). Click
-any voice or SFX block for its full text/prompt.
+A browser view of the production script as two independent timeline
+widgets, each with its own ruler, rather than one merged view: a **video
+timeline** and an **audio timeline**, side by side vertically but not
+sharing lanes.
 
-The BGM lane is an **upload** slot per act, not a generate button — this
-app has never called Suno/Udio itself, so once you've rendered each act's
-`generative_prompt` externally, you drop that audio file onto its block
-(`POST /api/production/:id/bgm/:actIndex`, raw audio body; re-uploading
-replaces the previous file for that act, no orphans left behind). Buttons
-below the timeline drive the rest of the pipeline in order — **Generate
-narration**, **Generate SFX** (both call the same ElevenLabs endpoints
-described above), then **Mix master**, which stays disabled until
-narration exists and every BGM act has an uploaded file, and calls
-`POST /api/production/:id/mix` with no body so it picks up the uploaded
-files automatically (the CLI's `bgmFiles` path still works for scripting).
-`GET /api/production/:id` (polled after every action) returns the script
-plus a `status` object — which lines/cues/acts are generated/uploaded, and
-whether a master mix exists — so the timeline reflects real server state
-rather than tracking it client-side.
+**Video timeline** — one lane, one thumbnail per `visual_track` interval.
+Nothing is rendered by default (a 10-minute story is 120 intervals — too
+expensive/slow to auto-generate), so it starts as placeholder cards showing
+each interval's camera shot; **Generate images** calls
+`POST /api/production/:id/visuals` (Imagen, 16:9, one call per interval,
+same "skip a failure with a warning" behavior as everything else) and fills
+in real thumbnails as they succeed, tracked per-interval so a partial run
+still shows progress. Click any interval for its full prompt.
+
+**Audio timeline** — three lanes: **Voice** (each dialogue/narration line),
+**SFX** (standalone cues in one shade, inline mid-dialogue cues in
+another), and **BGM** (each act block). Click any voice or SFX block for
+its full text/prompt. The BGM lane is an **upload** slot per act, not a
+generate button — this app has never called Suno/Udio itself, so once
+you've rendered each act's `generative_prompt` externally, you drop that
+audio file onto its block (`POST /api/production/:id/bgm/:actIndex`, raw
+audio body; re-uploading replaces the previous file for that act, no
+orphans left behind). Buttons below drive the rest of the pipeline in
+order — **Generate narration**, **Generate SFX**, then **Mix master**,
+which stays disabled until narration exists and every BGM act has an
+uploaded file, and calls `POST /api/production/:id/mix` with no body so it
+picks up the uploaded files automatically (the CLI's `bgmFiles` path still
+works for scripting).
+
+`GET /api/production/:id` (polled after every action, on both timelines)
+returns the script plus a `status` object — which lines/cues/acts/frames
+are generated or uploaded, and whether a master mix exists — so both
+timelines reflect real server state rather than tracking it client-side.
 
 ### AI-assisted line delivery (Voice Studio, opt-in)
 

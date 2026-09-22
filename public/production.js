@@ -88,15 +88,8 @@ document.getElementById('close-detail-btn').addEventListener('click', () => {
   document.getElementById('detail-panel').hidden = true;
 });
 
-function renderTimeline(script) {
-  const total = parseTimestamp(script.metadata.total_duration);
-  document.getElementById('timeline-title').textContent = script.metadata.title || 'Timeline';
-  document.getElementById('timeline-meta').textContent =
-    `${script.metadata.total_duration} · ${script.metadata.genre} · ${script.voice_track.length} lines · ` +
-    `${script.bgm_track.length} BGM acts · ${script.sfx_track.length + script.voice_track.flatMap((l) => l.inline_sfx).length} SFX cues`;
-
-  // Ruler
-  const ruler = document.getElementById('ruler');
+function renderRuler(elementId, total) {
+  const ruler = document.getElementById(elementId);
   ruler.innerHTML = '';
   const tickCount = 8;
   for (let i = 0; i <= tickCount; i++) {
@@ -106,6 +99,19 @@ function renderTimeline(script) {
     tick.textContent = formatTime(t);
     ruler.appendChild(tick);
   }
+}
+
+function renderTimeline(script) {
+  const total = parseTimestamp(script.metadata.total_duration);
+  document.getElementById('timeline-title').textContent = script.metadata.title || 'Timelines';
+  document.getElementById('timeline-meta').textContent =
+    `${script.metadata.total_duration} · ${script.metadata.genre} · ${script.voice_track.length} lines · ` +
+    `${script.bgm_track.length} BGM acts · ${script.sfx_track.length + script.voice_track.flatMap((l) => l.inline_sfx).length} SFX cues · ` +
+    `${script.visual_track.length} visual intervals`;
+
+  renderRuler('video-ruler', total);
+  renderRuler('audio-ruler', total);
+  renderVideoLane(script, total, {});
 
   // Voice lane
   const voiceLane = document.getElementById('lane-voice');
@@ -147,6 +153,39 @@ function renderTimeline(script) {
 
   // BGM lane
   renderBgmLane(script, total, {});
+}
+
+function renderVideoLane(script, total, visualFramesStatus) {
+  const videoLane = document.getElementById('lane-video');
+  videoLane.innerHTML = '';
+  for (const entry of script.visual_track) {
+    const start = parseTimestamp(entry.start_time);
+    const end = parseTimestamp(entry.end_time);
+    const leftPct = (start / total) * 100;
+    const widthPct = Math.max(((end - start) / total) * 100, 0.6);
+    const frameStatus = visualFramesStatus[entry.interval_index];
+
+    const el = document.createElement('div');
+    el.style.left = `${leftPct}%`;
+    el.style.width = `${widthPct}%`;
+    el.title = entry.image_generation_prompt;
+
+    if (frameStatus?.generated) {
+      el.className = 'tl-frame';
+      const img = document.createElement('img');
+      img.src = `/api/production/${currentId}/visual-frames/${frameStatus.fileName}?t=${Date.now()}`;
+      img.alt = `Interval ${entry.interval_index}`;
+      el.appendChild(img);
+    } else {
+      el.className = 'tl-frame pending';
+      el.textContent = entry.camera_shot;
+    }
+
+    el.addEventListener('click', () =>
+      showDetail(`<strong>Interval ${entry.interval_index}</strong> (${entry.start_time}–${entry.end_time})<br/><em>${entry.camera_shot}</em><p>${entry.image_generation_prompt}</p>`),
+    );
+    videoLane.appendChild(el);
+  }
 }
 
 function renderBgmLane(script, total, bgmActsStatus) {
@@ -213,6 +252,15 @@ async function refreshStatus() {
   for (const act of status.bgmActs) bgmActsStatus[act.index] = act;
   renderBgmLane(script, total, bgmActsStatus);
 
+  const visualFramesStatus = {};
+  for (const frame of status.visualFrames) visualFramesStatus[frame.index] = frame;
+  renderVideoLane(script, total, visualFramesStatus);
+  const generatedFrameCount = status.visualFrames.filter((f) => f.generated).length;
+  document.getElementById('gen-visuals-btn').textContent =
+    generatedFrameCount === status.visualFrames.length
+      ? 'Regenerate images (Imagen)'
+      : `Generate images (Imagen) — ${generatedFrameCount}/${status.visualFrames.length} done`;
+
   document.getElementById('lane-voice').classList.toggle('generated', status.hasNarration);
   document.getElementById('lane-sfx').classList.toggle('generated', status.hasSfx);
 
@@ -228,6 +276,21 @@ async function refreshStatus() {
     document.getElementById('master-audio').src = `/api/production/${currentId}/master?t=${Date.now()}`;
   }
 }
+
+document.getElementById('gen-visuals-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('gen-visuals-btn');
+  btn.disabled = true;
+  setStatus(`Generating ${currentScript.visual_track.length} images (Imagen) — this can take a while for longer stories...`);
+  try {
+    const { generated, requested } = await api(`/production/${currentId}/visuals`, { method: 'POST' });
+    setStatus(`Generated ${generated}/${requested} image(s).`);
+    await refreshStatus();
+  } catch (err) {
+    setStatus(err.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 document.getElementById('gen-narration-btn').addEventListener('click', async () => {
   setStatus('Synthesizing narration (ElevenLabs)...');

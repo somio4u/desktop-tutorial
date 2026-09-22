@@ -11,6 +11,9 @@
 .card h2 { margin-top: 0; }
 .card form { border: none; padding: 0; background: none; }
 
+.timeline-widget h3 { margin-top: 0; }
+.timeline-widget + .timeline-widget { margin-top: 24px; }
+
 .ruler {
   position: relative;
   height: 22px;
@@ -90,6 +93,32 @@
   width: 100%;
   height: 20px;
   margin-top: 2px;
+}
+
+.video-track { height: 80px; }
+
+.tl-frame {
+  position: absolute;
+  top: 4px;
+  height: 72px;
+  border-radius: 4px;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  background: var(--border);
+  cursor: pointer;
+}
+
+.tl-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.tl-frame.pending {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  color: #888;
+  text-align: center;
+  padding: 2px;
 }
 
 .actions { margin-top: 20px; flex-wrap: wrap; }
