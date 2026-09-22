@@ -85,6 +85,29 @@ story in one voice) — it's a standalone module for scripts that already have
 npm run cast-demo
 ```
 
+### Voice Studio UI (`public/casting.html`)
+
+A browser UI for casting and dialogue, linked from the main page (`npm run dev`,
+then open `/casting.html`):
+
+- **Characters tab**: pick a narrator voice; add characters by name, gender,
+  age bracket, and free-text style/mood/description. Each character gets an
+  automatically suggested voice (`src/casting/voiceMatcher.ts` scores every
+  voice in the roster by gender + age-bracket match plus keyword overlap
+  between your style/mood/description text and the voice's tone/archetypes).
+  A ranked list of alternatives — restricted to the same gender/age-bracket
+  category, so you're never offered a mismatched voice — is shown for
+  changing the pick; reassigning frees the old voice for other characters.
+- **Dialogue tab**: pick a speaker (narrator or any cast character), write a
+  line, and click Analyze. `src/casting/lineAnalyzer.ts` infers an
+  emotion/pace from the line's own text (punctuation, capitalization,
+  sentence length — a text heuristic, not real prosody analysis) unless you
+  give an explicit emotion, then maps that to ElevenLabs `stability` /
+  `similarity_boost` / `speed` settings. You can also swap that character's
+  voice right from this tab, from the same relevant-category alternatives
+  list, then re-analyze/generate. "Generate audio" synthesizes and plays
+  that one line.
+
 All 24 voices in `src/data/voices.ts` now have a `voiceId` filled in.
 **Verify these against your own ElevenLabs "Voices" library before relying
 on them in production.** 17 of the 24 match well-known ElevenLabs default

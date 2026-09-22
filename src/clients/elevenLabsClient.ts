@@ -10,6 +10,7 @@ export type OutputFormat =
 export interface VoiceSettingsOption {
   stability: number;
   similarityBoost: number;
+  speed?: number;
 }
 
 export interface SynthesizeOptions {
@@ -44,6 +45,7 @@ export async function synthesizeSpeech(text: string, options: SynthesizeOptions 
         voice_settings: {
           stability: options.voiceSettings.stability,
           similarity_boost: options.voiceSettings.similarityBoost,
+          ...(options.voiceSettings.speed !== undefined && { speed: options.voiceSettings.speed }),
         },
       }),
     }),

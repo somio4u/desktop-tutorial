@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voice Studio</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="casting.css" />
+</head>
+<body>
+  <main class="page">
+    <h1>Voice Studio</h1>
+    <p class="subtitle"><a href="/">&larr; Story Creator</a></p>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="characters">1. Characters</button>
+      <button class="tab-btn" data-tab="dialogue">2. Dialogue</button>
+    </div>
+
+    <!-- ===================== CHARACTERS TAB ===================== -->
+    <section id="tab-characters" class="tab-panel active">
+      <div class="card">
+        <h2>Narrator</h2>
+        <div class="row">
+          <label>
+            Narrator voice
+            <select id="narrator-select"></select>
+          </label>
+          <button id="set-narrator-btn" type="button">Set narrator</button>
+        </div>
+        <div id="narrator-current" class="current-voice" hidden></div>
+        <div id="narrator-alternatives" class="alternatives" hidden></div>
+      </div>
+
+      <div class="card">
+        <h2>Add a character</h2>
+        <form id="character-form">
+          <div class="row">
+            <label>
+              Name
+              <input id="char-name" type="text" placeholder="Bijay" required />
+            </label>
+            <label>
+              Gender
+              <select id="char-gender">
+                <option value="male">male</option>
+                <option value="female">female</option>
+                <option value="neutral_child">neutral (child)</option>
+              </select>
+            </label>
+            <label>
+              Age bracket
+              <select id="char-age">
+                <option value="child">child</option>
+                <option value="young_adult" selected>young_adult</option>
+                <option value="adult">adult</option>
+                <option value="senior">senior</option>
+              </select>
+            </label>
+          </div>
+          <div class="row">
+            <label>
+              Style <span class="optional">(how they talk)</span>
+              <input id="char-style" type="text" placeholder="fast-talking, sarcastic" />
+            </label>
+            <label>
+              Mood <span class="optional">(default disposition)</span>
+              <input id="char-mood" type="text" placeholder="confident, bright" />
+            </label>
+            <label>
+              Description <span class="optional">(optional)</span>
+              <input id="char-description" type="text" placeholder="the impatient college hero" />
+            </label>
+          </div>
+          <button type="submit">Suggest voice</button>
+        </form>
+      </div>
+
+      <h2>Cast</h2>
+      <div id="character-list" class="character-list"></div>
+    </section>
+
+    <!-- ===================== DIALOGUE TAB ===================== -->
+    <section id="tab-dialogue" class="tab-panel">
+      <div class="card">
+        <h2>Write a line</h2>
+        <form id="line-form">
+          <div class="row">
+            <label>
+              Speaker
+              <select id="line-speaker"></select>
+            </label>
+            <label>
+              Emotion <span class="optional">(optional override; auto-detected if blank)</span>
+              <input id="line-emotion" type="text" placeholder="joyful" />
+            </label>
+          </div>
+          <label>
+            Line text
+            <textarea id="line-text" rows="2" placeholder="Mamata! Hurry up, we need to get there before time!" required></textarea>
+          </label>
+          <div class="row">
+            <button type="submit" id="analyze-btn">Analyze</button>
+            <button type="button" id="synthesize-btn" disabled>Generate audio</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="line-result" class="card" hidden>
+        <h2>Delivery</h2>
+        <p id="line-analysis"></p>
+        <div id="line-voice-alternatives" class="alternatives"></div>
+        <audio id="line-audio" controls hidden></audio>
+      </div>
+    </section>
+
+    <div id="status" class="status" hidden></div>
+  </main>
+
+  <script src="casting.js"></script>
+</body>
+</html>

@@ -2,6 +2,7 @@ import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { castingRouter } from './castingRoutes.js';
 import { config } from './config.js';
 import { createStory, type CreateStoryOptions } from './pipeline/storyPipeline.js';
 
@@ -12,6 +13,7 @@ const audioExtensionFor = (format: string) => (format.startsWith('pcm') ? 'pcm' 
 const app = express();
 app.use(express.json());
 app.use(express.static(path.resolve('public')));
+app.use('/api', castingRouter);
 
 app.post('/api/stories', async (req, res) => {
   const { prompt, genre, voiceId, outputFormat } = req.body as Partial<CreateStoryOptions>;

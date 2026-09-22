@@ -1,23 +1,28 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { config } from '../config.js';
-import { CastingManager, type CharacterRequirement } from './castingManager.js';
+import { CastingManager, type CharacterProfile } from './castingManager.js';
 import { synthesizeScriptLine, type ScriptLine } from './audiobookGenerator.js';
 
 async function main() {
   // Monika Sogam narrates; she's automatically banned from character roles.
   const casting = new CastingManager('Monika Sogam');
 
-  const charactersToCast: CharacterRequirement[] = [
-    { name: 'Bijay', gender: 'male', ageBracket: 'young_adult', tone: 'confident' },
-    { name: 'Mamata', gender: 'female', ageBracket: 'young_adult', tone: 'joyful' },
-    { name: 'Bada Bapa', gender: 'male', ageBracket: 'senior', tone: 'wise' },
-    { name: 'Sarpanch', gender: 'male', ageBracket: 'adult', tone: 'commanding' },
+  const charactersToCast: CharacterProfile[] = [
+    { name: 'Bijay', gender: 'male', ageBracket: 'young_adult', mood: 'confident' },
+    { name: 'Mamata', gender: 'female', ageBracket: 'young_adult', mood: 'joyful' },
+    { name: 'Bada Bapa', gender: 'male', ageBracket: 'senior', mood: 'wise' },
+    { name: 'Sarpanch', gender: 'male', ageBracket: 'adult', mood: 'commanding' },
   ];
 
   for (const character of charactersToCast) {
     const voice = casting.castCharacter(character);
     console.log(`Cast '${character.name}' -> ${voice.voiceName} (banned from other characters)`);
+
+    const alternatives = casting.suggestAlternatives(character.name, 3);
+    console.log(
+      `  Alternatives if you want to change: ${alternatives.map((a) => `${a.voice.voiceName} (score ${a.score})`).join(', ')}`,
+    );
   }
 
   console.log('\nBanned voices for this project:', [...casting.getBannedVoices()]);
