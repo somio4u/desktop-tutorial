@@ -175,11 +175,12 @@ document.getElementById('line-form').addEventListener('submit', async (e) => {
   const speaker = document.getElementById('line-speaker').value;
   const text = document.getElementById('line-text').value;
   const emotion = document.getElementById('line-emotion').value || undefined;
+  const useAI = document.getElementById('line-use-ai').checked;
 
   try {
     const { delivery, settings } = await api('/casting/lines/analyze', {
       method: 'POST',
-      body: JSON.stringify({ speaker, text, emotion }),
+      body: JSON.stringify({ speaker, text, emotion, useAI }),
     });
     lastAnalyzedLine = { speaker, text, emotion };
 

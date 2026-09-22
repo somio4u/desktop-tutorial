@@ -4,6 +4,7 @@ import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { synthesizeScriptLine, resolveDelivery, type ScriptLine } from './casting/audiobookGenerator.js';
 import { CastingManager, type CharacterProfile } from './casting/castingManager.js';
+import { analyzeLineWithGemini } from './casting/geminiLineAnalyzer.js';
 import { calculateVoiceSettings } from './casting/voiceSettings.js';
 import { VOICES, type VoiceProfile } from './data/voices.js';
 
@@ -148,8 +149,8 @@ castingRouter.put('/casting/characters/:name/voice', (req, res) => {
   }
 });
 
-castingRouter.post('/casting/lines/analyze', (req, res) => {
-  const line = req.body as Partial<ScriptLine>;
+castingRouter.post('/casting/lines/analyze', async (req, res) => {
+  const line = req.body as Partial<ScriptLine> & { useAI?: boolean };
   if (!line.speaker || !line.text) {
     res.status(400).json({ error: 'speaker and text are required' });
     return;
@@ -157,7 +158,11 @@ castingRouter.post('/casting/lines/analyze', (req, res) => {
   try {
     const manager = requireCasting();
     const voiceId = manager.getVoiceIdForActor(line.speaker);
-    const delivery = resolveDelivery(line as ScriptLine);
+    const delivery = line.emotion
+      ? resolveDelivery(line as ScriptLine)
+      : line.useAI
+        ? await analyzeLineWithGemini(line.text)
+        : resolveDelivery(line as ScriptLine);
     const settings = calculateVoiceSettings(line.speaker, delivery.emotion, delivery.pace);
     res.json({ delivery, voiceId, settings });
   } catch (err) {

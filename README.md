@@ -172,3 +172,44 @@ intervals + dozens of dialogue lines for 10 minutes) — if Gemini's output
 gets truncated by the token limit, `generateProductionScript` will report it
 as a parse failure; the `warnings` array also flags if the visual track
 didn't come back with exactly one entry per 5 seconds.
+
+### AI-assisted line delivery (Voice Studio, opt-in)
+
+The Dialogue tab's default delivery analysis is the fast text heuristic in
+`src/casting/lineAnalyzer.ts`. Checking "Use Gemini to judge delivery" routes
+that one line through `src/casting/geminiLineAnalyzer.ts` instead — an actual
+Vertex Gemini call that reads the line and picks an emotion/pace, at the cost
+of a network round trip per line. Same idea via the API: pass `"useAI": true`
+to `POST /api/casting/lines/analyze` (ignored if an explicit `emotion` is
+also given — that always wins).
+
+## BYOK Studio (`public/studio.html`) — bring your own API keys
+
+A separate, fully client-side page for people who'd rather manage their own
+API keys than rely on this server's `.env` credentials. Click **Settings**
+to paste a Google API key (Gemini for story/script, Imagen for images), an
+Anthropic API key (Claude, alternative for story/script), and/or an
+ElevenLabs API key (voice). Keys are saved to this browser's `localStorage`
+only.
+
+**Every generation call goes straight from the browser to the provider —
+Google, Anthropic, or ElevenLabs — never through this app's server.** The
+only backend call this page makes is `GET /api/voices`, which just serves
+the static roster in `src/data/voices.ts` (no external API, no secrets). PDF
+export needs no key at all — it's assembled entirely client-side (jsPDF)
+from the current story text and any generated images.
+
+This is a real, sanctioned pattern (Anthropic's API supports it explicitly
+via an `anthropic-dangerous-direct-browser-access` header; Google and
+ElevenLabs' key-based REST endpoints are already browser-callable), but it
+means the pasted keys are visible to anyone with access to that browser —
+devtools, browser extensions, a shared machine. **Personal, local use only;
+don't deploy this page somewhere other people can open it with your keys
+still in local storage.**
+
+This page is independent of the server-side pipelines above (`/api/stories`,
+Voice Studio, `/api/production/*`) — it doesn't share their casting roster
+resolution, structured scene/story schema, or safeguards (e.g. no
+hallucinated-voice-ID protection, since there's no server-side resolver in
+this flow). It's a simpler, single-story/single-image/single-line tool by
+design.

@@ -10,7 +10,7 @@
 <body>
   <main class="page">
     <h1>Voice Studio</h1>
-    <p class="subtitle"><a href="/">&larr; Story Creator</a></p>
+    <p class="subtitle"><a href="/">&larr; Story Creator</a> &middot; <a href="/studio.html">BYOK Studio</a></p>
 
     <div class="tabs">
       <button class="tab-btn active" data-tab="characters">1. Characters</button>
@@ -98,6 +98,10 @@
           <label>
             Line text
             <textarea id="line-text" rows="2" placeholder="Mamata! Hurry up, we need to get there before time!" required></textarea>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="line-use-ai" />
+            Use Gemini to judge delivery <span class="optional">(slower, costs an API call; default is a fast text heuristic)</span>
           </label>
           <div class="row">
             <button type="submit" id="analyze-btn">Analyze</button>

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BYOK Studio</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="studio.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <main class="page">
+    <div class="studio-header">
+      <div>
+        <h1>BYOK Studio</h1>
+        <p class="subtitle">Paste your own API keys. Every call goes straight from this browser to the provider — nothing touches this app's server.</p>
+        <p class="subtitle"><a href="/">Story Creator</a> · <a href="/casting.html">Voice Studio</a></p>
+      </div>
+      <button id="settings-btn" type="button" class="settings-btn">&#9881; Settings</button>
+    </div>
+
+    <div class="notice">
+      Keys are stored only in this browser's local storage and sent directly to Google / Anthropic / ElevenLabs on
+      each request. Anyone with access to this browser (devtools, a shared machine) can read them. Personal, local
+      use only — don't use this on a shared or public computer.
+    </div>
+
+    <!-- ===================== SETTINGS MODAL ===================== -->
+    <dialog id="settings-modal">
+      <h2>API Keys</h2>
+      <form id="settings-form">
+        <label>
+          Google API key <span class="optional">(Gemini for story/script, Imagen for images)</span>
+          <div class="key-input-row">
+            <input type="password" id="key-google" autocomplete="off" placeholder="AIza..." />
+            <button type="button" class="toggle-visibility" data-target="key-google">show</button>
+          </div>
+        </label>
+        <label>
+          Anthropic API key <span class="optional">(Claude, alternative for story/script)</span>
+          <div class="key-input-row">
+            <input type="password" id="key-anthropic" autocomplete="off" placeholder="sk-ant-..." />
+            <button type="button" class="toggle-visibility" data-target="key-anthropic">show</button>
+          </div>
+        </label>
+        <label>
+          ElevenLabs API key <span class="optional">(voice generation)</span>
+          <div class="key-input-row">
+            <input type="password" id="key-elevenlabs" autocomplete="off" placeholder="..." />
+            <button type="button" class="toggle-visibility" data-target="key-elevenlabs">show</button>
+          </div>
+        </label>
+        <label>
+          Default story/script provider
+          <select id="default-provider">
+            <option value="google">Google (Gemini)</option>
+            <option value="anthropic">Anthropic (Claude)</option>
+          </select>
+        </label>
+        <div class="row">
+          <button type="submit">Save</button>
+          <button type="button" id="clear-keys-btn" class="danger">Clear all keys</button>
+          <button type="button" id="close-settings-btn">Close</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="status" class="status" hidden></div>
+
+    <!-- ===================== STORY ===================== -->
+    <section class="card">
+      <h2>Story / Script</h2>
+      <label>
+        Prompt
+        <textarea id="story-prompt" rows="3" placeholder="A lighthouse keeper finds a message in a bottle from the future"></textarea>
+      </label>
+      <div class="row">
+        <label>
+          Provider
+          <select id="story-provider">
+            <option value="google">Google (Gemini)</option>
+            <option value="anthropic">Anthropic (Claude)</option>
+          </select>
+        </label>
+        <button type="button" id="generate-story-btn">Generate story</button>
+      </div>
+      <label>
+        Story text <span class="optional">(editable — used for the PDF export)</span>
+        <textarea id="story-text" rows="8"></textarea>
+      </label>
+    </section>
+
+    <!-- ===================== IMAGES ===================== -->
+    <section class="card">
+      <h2>Images <span class="optional">(Google Imagen)</span></h2>
+      <label>
+        Image prompt
+        <textarea id="image-prompt" rows="2" placeholder="A weathered lighthouse keeper on a rocky cliff at dawn, cinematic lighting"></textarea>
+      </label>
+      <button type="button" id="generate-image-btn">Generate image</button>
+      <div id="image-gallery" class="image-gallery"></div>
+    </section>
+
+    <!-- ===================== VOICE ===================== -->
+    <section class="card">
+      <h2>Voice <span class="optional">(ElevenLabs)</span></h2>
+      <label>
+        Text to speak
+        <textarea id="voice-text" rows="3" placeholder="Paste a line, or reuse the story text above"></textarea>
+      </label>
+      <div class="row">
+        <label>
+          Voice
+          <select id="voice-select"></select>
+        </label>
+        <label id="voice-custom-wrap" hidden>
+          Custom voice ID <span class="optional">(from your own ElevenLabs library)</span>
+          <input type="text" id="voice-custom-id" placeholder="ElevenLabs voice ID" />
+        </label>
+        <button type="button" id="use-story-text-btn">Use story text</button>
+        <button type="button" id="generate-voice-btn">Generate audio</button>
+      </div>
+      <audio id="voice-audio" controls hidden></audio>
+      <a id="voice-download" class="download-link" hidden download="voice-line.mp3">Download audio</a>
+    </section>
+
+    <!-- ===================== PDF ===================== -->
+    <section class="card">
+      <h2>PDF <span class="optional">(no API key needed — built in this browser)</span></h2>
+      <p>Compiles the story text above and every generated image into one downloadable PDF.</p>
+      <button type="button" id="export-pdf-btn">Download as PDF</button>
+    </section>
+  </main>
+
+  <script src="studio.js"></script>
+</body>
+</html>
