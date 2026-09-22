@@ -37,6 +37,37 @@
         </label>
       </div>
 
+      <fieldset class="provider-fieldset">
+        <legend>Story generation agent</legend>
+        <label class="radio-row">
+          <input type="radio" name="story-provider" value="vertex" checked />
+          Vertex AI <span class="optional">(default — this server's configured Google Cloud project)</span>
+        </label>
+        <label class="radio-row">
+          <input type="radio" name="story-provider" value="google-api-key" />
+          Google API key <span class="optional">(switch to your own Gemini API key)</span>
+        </label>
+        <label class="radio-row">
+          <input type="radio" name="story-provider" value="anthropic" />
+          Anthropic API key <span class="optional">(use Claude instead)</span>
+        </label>
+
+        <div id="provider-key-row" class="row" hidden>
+          <label>
+            API key
+            <div class="key-input-row">
+              <input type="password" id="provider-api-key" autocomplete="off" placeholder="paste key" />
+              <button type="button" id="toggle-key-visibility">show</button>
+            </div>
+          </label>
+        </div>
+        <p class="optional key-note">
+          Sent with this one request only, used in memory for this generation, never saved to disk or logged by the
+          server. Images still come from this server's Vertex/Imagen setup and audio still from its ElevenLabs
+          setup either way — this only switches the story-text step.
+        </p>
+      </fieldset>
+
       <button id="submit-btn" type="submit">Generate story</button>
     </form>
 

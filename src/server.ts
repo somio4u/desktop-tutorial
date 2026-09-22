@@ -18,14 +18,18 @@ app.use('/api', castingRouter);
 app.use('/api', productionRouter);
 
 app.post('/api/stories', async (req, res) => {
-  const { prompt, genre, voiceId, outputFormat } = req.body as Partial<CreateStoryOptions>;
+  const { prompt, genre, voiceId, outputFormat, storyProvider, apiKey } = req.body as Partial<CreateStoryOptions>;
   if (!prompt) {
     res.status(400).json({ error: 'prompt is required' });
     return;
   }
+  if (storyProvider && storyProvider !== 'vertex' && !apiKey) {
+    res.status(400).json({ error: `apiKey is required when storyProvider is "${storyProvider}"` });
+    return;
+  }
 
   try {
-    const result = await createStory({ prompt, genre, voiceId, outputFormat });
+    const result = await createStory({ prompt, genre, voiceId, outputFormat, storyProvider, apiKey });
     const id = randomUUID();
     await mkdir(OUTPUT_DIR, { recursive: true });
 

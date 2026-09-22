@@ -6,7 +6,14 @@ audiobook voiceover.
 Pipeline: **Gemini** (story text + per-scene image prompts, as structured
 JSON) → **Imagen** (one illustration per scene) → **ElevenLabs**
 (text-to-speech, output as MP3 or raw PCM). Gemini and Imagen are called via
-**Vertex AI**, authenticated with a service account JSON key.
+**Vertex AI** by default, authenticated with a service account JSON key.
+
+The form has a **"Story generation agent"** switch: Vertex AI (default) or
+your own Google API key / Anthropic (Claude) API key. Images still come from
+this server's Vertex/Imagen setup and audio still from its ElevenLabs setup
+regardless — the switch only affects the story-text step. A pasted key rides
+along in that one `POST /api/stories` request, used in memory for that call
+only; it's never written to disk, logged, or reused for a later request.
 
 ## Setup
 

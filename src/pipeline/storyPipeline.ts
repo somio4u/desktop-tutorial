@@ -1,6 +1,27 @@
-import { generateStory, type StoryScene } from '../clients/geminiClient.js';
+import { generateStory as generateStoryVertex, type StoryScene, type StoryWithScenes } from '../clients/geminiClient.js';
+import { generateStory as generateStoryGoogleApiKey } from '../clients/googleApiKeyClient.js';
+import { generateStory as generateStoryClaude } from '../clients/claudeClient.js';
 import { generateImage } from '../clients/imagenClient.js';
 import { synthesizeSpeech, type OutputFormat } from '../clients/elevenLabsClient.js';
+
+export type StoryProvider = 'vertex' | 'google-api-key' | 'anthropic';
+
+async function generateStoryText(
+  provider: StoryProvider,
+  input: { prompt: string; genre?: string },
+  apiKey?: string,
+): Promise<StoryWithScenes> {
+  switch (provider) {
+    case 'vertex':
+      return generateStoryVertex(input);
+    case 'google-api-key':
+      if (!apiKey) throw new Error('apiKey is required when storyProvider is "google-api-key"');
+      return generateStoryGoogleApiKey(input, apiKey);
+    case 'anthropic':
+      if (!apiKey) throw new Error('apiKey is required when storyProvider is "anthropic"');
+      return generateStoryClaude(input, apiKey);
+  }
+}
 
 // Keep request bodies well under ElevenLabs' per-request character limit.
 const MAX_CHUNK_CHARS = 2000;
@@ -32,6 +53,12 @@ export interface CreateStoryOptions {
   genre?: string;
   voiceId?: string;
   outputFormat?: OutputFormat;
+  // Defaults to Vertex AI (the server's configured service account). Passing
+  // 'google-api-key' or 'anthropic' overrides just the story-text step with
+  // a caller-supplied key; images (Imagen) and audio (ElevenLabs) are
+  // unaffected either way.
+  storyProvider?: StoryProvider;
+  apiKey?: string;
 }
 
 export interface GeneratedImage {
@@ -63,7 +90,8 @@ async function illustrateScene(scene: StoryScene): Promise<StorySceneResult> {
 }
 
 export async function createStory(options: CreateStoryOptions): Promise<StoryResult> {
-  const { storyText, scenes } = await generateStory({ prompt: options.prompt, genre: options.genre });
+  const provider = options.storyProvider ?? 'vertex';
+  const { storyText, scenes } = await generateStoryText(provider, { prompt: options.prompt, genre: options.genre }, options.apiKey);
   const outputFormat = options.outputFormat ?? 'pcm_44100';
 
   const chunks = splitIntoChunks(storyText, MAX_CHUNK_CHARS);

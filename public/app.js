@@ -13,6 +13,24 @@ function setStatus(message, isError = false) {
   statusEl.classList.toggle('error', isError);
 }
 
+// ---------------- Story provider override ----------------
+const providerKeyRow = document.getElementById('provider-key-row');
+const providerApiKeyInput = document.getElementById('provider-api-key');
+
+function syncProviderKeyVisibility() {
+  const selected = document.querySelector('input[name="story-provider"]:checked').value;
+  providerKeyRow.hidden = selected === 'vertex';
+}
+document.querySelectorAll('input[name="story-provider"]').forEach((radio) => {
+  radio.addEventListener('change', syncProviderKeyVisibility);
+});
+
+document.getElementById('toggle-key-visibility').addEventListener('click', (e) => {
+  const showing = providerApiKeyInput.type === 'text';
+  providerApiKeyInput.type = showing ? 'password' : 'text';
+  e.target.textContent = showing ? 'show' : 'hide';
+});
+
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   resultEl.hidden = true;
@@ -20,11 +38,20 @@ form.addEventListener('submit', async (e) => {
   setStatus('Generating story, illustrations, and narration… this can take a minute.');
 
   const outputFormat = document.getElementById('outputFormat').value;
+  const storyProvider = document.querySelector('input[name="story-provider"]:checked').value;
+  if (storyProvider !== 'vertex' && !providerApiKeyInput.value.trim()) {
+    submitBtn.disabled = false;
+    setStatus(`Paste your ${storyProvider === 'anthropic' ? 'Anthropic' : 'Google'} API key first, or switch back to Vertex AI.`, true);
+    return;
+  }
+
   const body = {
     prompt: document.getElementById('prompt').value,
     genre: document.getElementById('genre').value || undefined,
     voiceId: document.getElementById('voiceId').value || undefined,
     outputFormat,
+    storyProvider,
+    apiKey: storyProvider !== 'vertex' ? providerApiKeyInput.value.trim() : undefined,
   };
 
   try {
