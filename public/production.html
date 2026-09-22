@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Production Timeline</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="production.css" />
+</head>
+<body>
+  <main class="page wide">
+    <h1>Production Timeline</h1>
+    <p class="subtitle">
+      <a href="/">Story Creator</a> &middot; <a href="/casting.html">Voice Studio</a> &middot; <a href="/studio.html">BYOK Studio</a>
+    </p>
+
+    <section class="card">
+      <h2>Generate a production script</h2>
+      <form id="script-form">
+        <label>
+          Premise
+          <textarea id="premise" rows="2" placeholder="A lighthouse keeper finds a message in a bottle from the future" required></textarea>
+        </label>
+        <div class="row">
+          <label>
+            Duration (minutes)
+            <input id="duration" type="number" min="1" max="20" value="5" />
+          </label>
+          <label>
+            Genre <span class="optional">(optional)</span>
+            <input id="genre" type="text" placeholder="mystery" />
+          </label>
+          <label>
+            Narrator
+            <select id="narrator"></select>
+          </label>
+        </div>
+        <button type="submit" id="generate-btn">Generate script</button>
+      </form>
+    </section>
+
+    <div id="status" class="status" hidden></div>
+
+    <section id="timeline-section" class="card" hidden>
+      <h2 id="timeline-title">Timeline</h2>
+      <p id="timeline-meta" class="optional"></p>
+
+      <div id="ruler" class="ruler"></div>
+
+      <div class="lane">
+        <div class="lane-label">Voice</div>
+        <div id="lane-voice" class="lane-track"></div>
+      </div>
+      <div class="lane">
+        <div class="lane-label">SFX</div>
+        <div id="lane-sfx" class="lane-track"></div>
+      </div>
+      <div class="lane">
+        <div class="lane-label">BGM<br /><span class="optional">(Suno — upload)</span></div>
+        <div id="lane-bgm" class="lane-track"></div>
+      </div>
+
+      <div class="row actions">
+        <button type="button" id="gen-narration-btn">1. Generate narration (ElevenLabs)</button>
+        <button type="button" id="gen-sfx-btn">2. Generate SFX (ElevenLabs)</button>
+        <button type="button" id="mix-btn" disabled>3. Mix master (needs all BGM uploaded)</button>
+      </div>
+
+      <div id="master-result" hidden>
+        <h3>Master mix</h3>
+        <audio id="master-audio" controls></audio>
+      </div>
+    </section>
+
+    <div id="detail-panel" class="detail-panel" hidden>
+      <button type="button" id="close-detail-btn" class="close-btn">&times;</button>
+      <div id="detail-content"></div>
+    </div>
+  </main>
+
+  <script src="production.js"></script>
+</body>
+</html>
