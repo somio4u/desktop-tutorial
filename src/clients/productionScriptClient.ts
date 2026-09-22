@@ -148,14 +148,58 @@ const RESPONSE_SCHEMA = {
   required: ['metadata', 'asset_manifest', 'voice_track', 'bgm_track', 'sfx_track', 'visual_track'],
 };
 
+interface BgmAct {
+  index: number;
+  label: string;
+  startSeconds: number;
+  endSeconds: number;
+}
+
+function formatTime(totalSeconds: number): string {
+  return `${String(Math.floor(totalSeconds / 60)).padStart(2, '0')}:${String(totalSeconds % 60).padStart(2, '0')}`;
+}
+
+// Never run one BGM track across the whole story — split into 2 acts for a
+// shorter piece, 3 for a longer one, with a fixed 15s cross-fade window at
+// each act boundary so the transition isn't an abrupt cut. Boundaries are
+// computed deterministically (equal fractions of the runtime) rather than
+// left to the model, the same way visual_track's 5-second grid is dictated
+// rather than hoped for.
+const CROSSFADE_SECONDS = 15;
+const TWO_ACT_LABELS = ['Exposition / Rising Action', 'Climax / Resolution'];
+const THREE_ACT_LABELS = ['Setup & World Building', 'Confrontation / Rising Tension', 'Climax, Aftermath & Resolution'];
+
+function planBgmActs(totalSeconds: number): BgmAct[] {
+  const actCount = totalSeconds <= 450 ? 2 : 3;
+  const labels = actCount === 2 ? TWO_ACT_LABELS : THREE_ACT_LABELS;
+  const divisionPoints = Array.from({ length: actCount - 1 }, (_, i) => Math.round(((i + 1) * totalSeconds) / actCount));
+
+  return labels.map((label, i) => ({
+    index: i + 1,
+    label,
+    startSeconds: i === 0 ? 0 : divisionPoints[i - 1],
+    endSeconds: i === actCount - 1 ? totalSeconds : divisionPoints[i] + CROSSFADE_SECONDS,
+  }));
+}
+
 function formatRoster(): string {
   return VOICES.map(
     (v) => `- ${v.voiceName}: ${v.gender}, ${v.ageBracket} (${v.ageRange}), energy ${v.energy}, tone: ${v.baseTone} (${v.emotionalTone.join(', ')}), archetypes: ${v.archetypes.join(', ')}`,
   ).join('\n');
 }
 
-function buildInstruction(input: GenerateProductionScriptInput, intervalCount: number, totalSeconds: number): string {
-  const totalDuration = `${String(Math.floor(totalSeconds / 60)).padStart(2, '0')}:${String(totalSeconds % 60).padStart(2, '0')}`;
+function formatBgmActRequirements(acts: BgmAct[]): string {
+  return acts
+    .map((act, i) => {
+      const isFirst = i === 0;
+      const isLast = i === acts.length - 1;
+      return `  Block ${act.index} (block_id "BGM_ACT_${act.index}", Act: ${act.label}): start_time ${formatTime(act.startSeconds)}, end_time ${formatTime(act.endSeconds)}. transition_in: ${isFirst ? 'FADE_IN_2S' : `CROSS_FADE_${CROSSFADE_SECONDS}S`}. transition_out: ${isLast ? 'FADE_TO_SILENCE' : `CROSS_FADE_${CROSSFADE_SECONDS}S`}.`;
+    })
+    .join('\n');
+}
+
+function buildInstruction(input: GenerateProductionScriptInput, intervalCount: number, totalSeconds: number, bgmActs: BgmAct[]): string {
+  const totalDuration = formatTime(totalSeconds);
 
   return `You are an expert Audio Film Director, Sound Designer, Screenwriter, and Visual Continuity Supervisor. Turn the premise below into a production-grade, multi-track cue script for automated TTS (ElevenLabs), AI music generation (Suno/Udio), procedural SFX placement, and AI image generation (Midjourney/Flux/Kling).
 
@@ -173,11 +217,15 @@ TIMING & PACING STANDARD
 - Use the pacing_wps value that matches each line's actual delivery style, and make start_time/end_time consistent with script_content's word count at that pace.
 - voice_track timestamps must be contiguous and non-overlapping, covering the full ${totalDuration}.
 
-BGM PROGRESSION
-- bgm_track blocks must be contiguous and non-overlapping across the full runtime.
-- transition_in/transition_out must be one of: FADE_IN_2S-style fade, CROSS_FADE_Ns, HARD_CUT, FADE_TO_SILENCE, SWELL_AND_DROP.
-- generative_prompt must specify instrumentation, key, and tempo (e.g. "D minor, 72 BPM, violin tremolo, muted acoustic guitar").
-- duck_under_dialogue: true when dialogue plays over this block.
+BGM PROGRESSION (critical — never run one track across the whole story)
+A single mood running the whole runtime induces auditory fatigue and ignores the story's emotional acts. Produce EXACTLY ${bgmActs.length} bgm_track blocks, one per act below, using EXACTLY these start_time/end_time/transition values (do not change the timings or add/remove blocks — those are fixed so the acts overlap by a ${CROSSFADE_SECONDS}s cross-fade window rather than cutting abruptly):
+${formatBgmActRequirements(bgmActs)}
+
+For each block, you fill in:
+- mood: the emotional character of this act (e.g. "eerie curiosity", "tragic resolve").
+- duck_under_dialogue: true (dialogue plays over every block in this format).
+- generative_prompt: a Suno/Udio-ready prompt for an INSTRUMENTAL cue that keeps the midrange clear for spoken narration. It MUST start with "[Instrumental]" and MUST include "no vocals" — never write anything a music generator could render as sung lyrics. Specify genre/mood, tempo or BPM, and 2-4 concrete instruments (e.g. "[Instrumental], dark cinematic thriller, rising tension strings, tribal earthen percussion, dramatic crescendo, eerie atmosphere, no vocals").
+- Each act's prompt should escalate/shift from the previous one to track the story's emotional arc (e.g. calm exposition → rising tension → climax/resolution), not just repeat the same mood with different words.
 
 SFX
 - Every meaningful diegetic or non-diegetic sound gets an entry with an exact timestamp within the runtime.
@@ -202,7 +250,8 @@ Return only the JSON described by the response schema.`;
 export async function generateProductionScript(input: GenerateProductionScriptInput): Promise<GenerateProductionScriptResult> {
   const totalSeconds = Math.round(input.durationMinutes * 60);
   const intervalCount = Math.round(totalSeconds / 5);
-  const instruction = buildInstruction(input, intervalCount, totalSeconds);
+  const bgmActs = planBgmActs(totalSeconds);
+  const instruction = buildInstruction(input, intervalCount, totalSeconds, bgmActs);
 
   const url = vertexUrl(config.google.llmModel, 'generateContent');
   const res = await fetch(url, {
@@ -235,6 +284,13 @@ export async function generateProductionScript(input: GenerateProductionScriptIn
   const warnings: string[] = [];
   if (script.visual_track.length !== intervalCount) {
     warnings.push(`Expected ${intervalCount} visual_track entries (one per 5s), got ${script.visual_track.length}.`);
+  }
+  if (script.bgm_track.length !== bgmActs.length) {
+    warnings.push(`Expected ${bgmActs.length} bgm_track blocks (${bgmActs.map((a) => a.label).join(', ')}), got ${script.bgm_track.length}.`);
+  }
+  const nonInstrumental = script.bgm_track.filter((b) => !/^\[Instrumental\]/i.test(b.generative_prompt.trim()));
+  if (nonInstrumental.length > 0) {
+    warnings.push(`${nonInstrumental.length} bgm_track prompt(s) don't start with "[Instrumental]" as required for Suno/Udio.`);
   }
 
   return { script, warnings };

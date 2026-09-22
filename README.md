@@ -147,7 +147,8 @@ sheet, and a 5-second-interval visual beat sheet — as one JSON document (see
   directives (mood, transitions, instrumentation, generative prompts) meant
   to be fed into an external music/SFX generator (Suno, Udio, a procedural
   SFX tool). Nothing in this repo calls those services; there's no
-  integration for them.
+  integration for them. `bgm_track` is never a single track for the whole
+  runtime — see below.
 - `visual_track` — one `image_generation_prompt` per 5-second interval
   (continuity-tagged against `asset_manifest`). These are prompts only; the
   pipeline doesn't batch-generate images for every interval (a 10-minute
@@ -179,6 +180,46 @@ intervals + dozens of dialogue lines for 10 minutes) — if Gemini's output
 gets truncated by the token limit, `generateProductionScript` will report it
 as a parse failure; the `warnings` array also flags if the visual track
 didn't come back with exactly one entry per 5 seconds.
+
+### Multi-act BGM structure
+
+A single BGM track running the whole story causes auditory fatigue and
+ignores the story's emotional arc, so `bgm_track` is never one block:
+`src/clients/productionScriptClient.ts` computes 2 acts for a story ≤7.5
+minutes, 3 for longer, with act boundaries at equal fractions of the runtime
+and a fixed 15-second cross-fade window between consecutive acts — these
+exact timings are dictated to Gemini (not left to chance), the same way the
+visual track's 5-second grid is. Gemini only fills in each act's mood and a
+Suno/Udio-ready `generative_prompt`, which the instruction requires to start
+with `[Instrumental]` and include `no vocals` so the music stays out of the
+narration's frequency range; a warning is raised if either constraint isn't
+met. The `warnings` array also flags a wrong BGM block count.
+
+### Mixing a master file (ffmpeg, requires the `ffmpeg` binary on PATH)
+
+Once you've rendered `bgm_track`'s prompts into actual audio files yourself
+(Suno, Udio, or anything else — one file per act, in order), mix them
+against the synthesized narration into one master file:
+
+```bash
+npm run produce -- "..." --duration 10 --with-narration --bgm act1.mp3,act2.mp3,act3.mp3
+# writes output/productions/production-<ts>-master.mp3
+```
+
+or via the API, after narration has been synthesized:
+`POST /api/production/:id/mix` with `{ "bgmFiles": ["/path/act1.mp3", ...] }`
+(paths readable by this server; count must match `bgm_track`'s length)
+returns `{ id, masterUrl }`.
+
+This runs the exact pipeline the spec calls for
+(`src/production/masterMix.ts`): each voice line is delayed to its planned
+`start_time` and mixed into one continuous narration track (`adelay` +
+`amix`), the BGM acts are cross-faded in sequence (`acrossfade`, 15s), the
+result is sidechain-ducked under the narration (`sidechaincompress`,
+-12dB-equivalent via threshold/ratio, so the music drops during dialogue and
+returns during pauses), and the two are mixed into the final file. If
+`ffmpeg` isn't installed, both entry points fail with a clear message
+telling you to install it rather than a cryptic spawn error.
 
 ### AI-assisted line delivery (Voice Studio, opt-in)
 

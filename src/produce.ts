@@ -2,6 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { produceScript } from './pipeline/productionPipeline.js';
 import { synthesizeNarration } from './production/narrationSynth.js';
+import { concatenateNarration, renderMasterAudio } from './production/masterMix.js';
 
 function parseArgs(argv: string[]) {
   const positional: string[] = [];
@@ -27,7 +28,10 @@ function parseArgs(argv: string[]) {
 async function main() {
   const { premise, flags } = parseArgs(process.argv.slice(2));
   if (!premise) {
-    console.error('Usage: npm run produce -- "<premise>" [--duration 5] [--genre fantasy] [--lang English] [--narrator Raju] [--with-narration]');
+    console.error(
+      'Usage: npm run produce -- "<premise>" [--duration 5] [--genre fantasy] [--lang English] ' +
+        '[--narrator Raju] [--with-narration] [--bgm act1.mp3,act2.mp3[,act3.mp3]]',
+    );
     process.exit(1);
   }
 
@@ -55,19 +59,39 @@ async function main() {
       `${script.sfx_track.length} SFX cues, ${script.visual_track.length} visual intervals`,
   );
 
-  if (flags['with-narration']) {
-    console.log('Synthesizing narration audio (ElevenLabs)...');
-    const lines = await synthesizeNarration(script);
-    const voiceLinesDir = `${base}-voice-lines`;
-    await mkdir(voiceLinesDir, { recursive: true });
-    for (const { line, audio } of lines) {
-      const fileName = path.join(voiceLinesDir, `${String(line.index).padStart(3, '0')}-${line.speaker.replace(/\s+/g, '_')}.mp3`);
-      await writeFile(fileName, audio);
-    }
-    console.log(`Voice lines: ${voiceLinesDir}/`);
-  } else {
+  if (!flags['with-narration']) {
     console.log('(pass --with-narration to also synthesize the voice track via ElevenLabs)');
+    return;
   }
+
+  console.log('Synthesizing narration audio (ElevenLabs)...');
+  const lines = await synthesizeNarration(script);
+  const voiceLinesDir = `${base}-voice-lines`;
+  await mkdir(voiceLinesDir, { recursive: true });
+  for (const { line, audio } of lines) {
+    const fileName = path.join(voiceLinesDir, `${String(line.index).padStart(3, '0')}-${line.speaker.replace(/\s+/g, '_')}.mp3`);
+    await writeFile(fileName, audio);
+  }
+  console.log(`Voice lines: ${voiceLinesDir}/`);
+
+  const bgmFlag = flags.bgm;
+  if (typeof bgmFlag !== 'string') {
+    console.log('(pass --bgm act1.mp3,act2.mp3[,act3.mp3] — your own Suno/Udio renders of bgm_track\'s prompts — to mix a master file)');
+    return;
+  }
+
+  const bgmPaths = bgmFlag.split(',').map((p) => p.trim());
+  if (bgmPaths.length !== script.bgm_track.length) {
+    console.error(`Expected ${script.bgm_track.length} BGM file(s) to match bgm_track (got ${bgmPaths.length}). Skipping mix.`);
+    return;
+  }
+
+  console.log('Mixing master audio (ffmpeg: cross-fading BGM acts, ducking under narration)...');
+  const narrationPath = `${base}-narration.mp3`;
+  await concatenateNarration(lines, `${base}-mix-tmp`, narrationPath);
+  const masterPath = `${base}-master.mp3`;
+  await renderMasterAudio(narrationPath, bgmPaths, masterPath);
+  console.log(`Master mix: ${masterPath}`);
 }
 
 main().catch((err) => {
