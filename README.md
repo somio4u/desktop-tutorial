@@ -85,6 +85,13 @@ story in one voice) — it's a standalone module for scripts that already have
 npm run cast-demo
 ```
 
-Note: `src/data/voices.ts` entries need a real ElevenLabs `voiceId` filled in
-before synthesis will work — without one, `CastingManager` still runs the
-casting/banning logic but throws when you ask for an actual voice ID.
+All 24 voices in `src/data/voices.ts` now have a `voiceId` filled in.
+**Verify these against your own ElevenLabs "Voices" library before relying
+on them in production.** 17 of the 24 match well-known ElevenLabs default
+premade voices (reused here under different character names, which works
+fine). The other 7 — `Aarav`, `Raju`, `Vikram`, `Aaditya K`, `Monika Sogam`,
+`Shanti`, `Kavita M` — don't match any recognized default voice ID; they may
+be real custom/cloned voices from a specific account, or they may not exist.
+An invalid ID fails at synthesis time with a 400/404 from ElevenLabs, not
+before, so check these 7 first if `cast-demo` or the main pipeline errors on
+a specific character's line.

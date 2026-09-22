@@ -4,9 +4,9 @@ export type Energy = 'low' | 'moderate' | 'high' | 'extreme' | 'commanding';
 
 export interface VoiceProfile {
   voiceName: string;
-  // ElevenLabs voice_id for this profile. Not yet looked up — fill in from
-  // your ElevenLabs "Voices" library (or a matching voice you clone/design)
-  // before using this profile with synthesizeSpeech().
+  // ElevenLabs voice_id for this profile. See README's "Multi-character
+  // casting" section — 7 of these are unverified against a real account and
+  // may not resolve to an actual ElevenLabs voice.
   voiceId?: string;
   gender: Gender;
   ageBracket: AgeBracket;
@@ -22,6 +22,7 @@ export interface VoiceProfile {
 export const VOICES: VoiceProfile[] = [
   {
     voiceName: 'Chiku',
+    voiceId: '9BWtsMINqrJLrRacOk9y',
     gender: 'neutral_child',
     ageBracket: 'child',
     ageRange: '6-10',
@@ -32,6 +33,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Amiya',
+    voiceId: 'ThT5KcBeYPX3keUQqHPh',
     gender: 'female',
     ageBracket: 'child',
     ageRange: '8-12',
@@ -42,6 +44,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Neel',
+    voiceId: 'IKne3meq5aSn9X80bhx2',
     gender: 'male',
     ageBracket: 'child',
     ageRange: '11-15',
@@ -52,6 +55,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Gigi',
+    voiceId: 'jBpfuIE2acCO8z3wKNLl',
     gender: 'neutral_child',
     ageBracket: 'child',
     ageRange: '6-9',
@@ -62,6 +66,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Aarav',
+    voiceId: 'h8dZcI0wWc3d5Q0eQ9kL',
     gender: 'male',
     ageBracket: 'young_adult',
     ageRange: '20-25',
@@ -72,6 +77,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Aakash',
+    voiceId: 'ErXwobaYiN019PkySvjV',
     gender: 'male',
     ageBracket: 'young_adult',
     ageRange: '24-29',
@@ -82,6 +88,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Dev',
+    voiceId: 'yoZ06aMxZJJ28mfd3POQ',
     gender: 'male',
     ageBracket: 'young_adult',
     ageRange: '19-25',
@@ -92,6 +99,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Krishna Gupta',
+    voiceId: 'TxGEqnHWrfWFTfGW9XjX',
     gender: 'male',
     ageBracket: 'young_adult',
     ageRange: '23-29',
@@ -102,6 +110,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Anika',
+    voiceId: 'EXAVITQu4vr4xnSDxMaL',
     gender: 'female',
     ageBracket: 'young_adult',
     ageRange: '22-27',
@@ -112,6 +121,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Pooja',
+    voiceId: 'z9fAnlkpzviPz146aGWa',
     gender: 'female',
     ageBracket: 'young_adult',
     ageRange: '20-25',
@@ -122,6 +132,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Rhea',
+    voiceId: 'jsCqWAovK2LkecY7zXl4',
     gender: 'female',
     ageBracket: 'young_adult',
     ageRange: '24-29',
@@ -132,6 +143,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Maya',
+    voiceId: '21m00Tcm4TlvDq8ikWAM',
     gender: 'female',
     ageBracket: 'young_adult',
     ageRange: '22-28',
@@ -142,6 +154,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Raju',
+    voiceId: '3DsK25b3w0pX1b5s3vL0',
     gender: 'male',
     ageBracket: 'adult',
     ageRange: '32-42',
@@ -152,6 +165,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Vikram',
+    voiceId: '2lZ6w3bN4xS8yV1kM0pL',
     gender: 'male',
     ageBracket: 'adult',
     ageRange: '38-48',
@@ -162,6 +176,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Ranbir',
+    voiceId: 'pNInz6obpgDQGcFmaJgB',
     gender: 'male',
     ageBracket: 'adult',
     ageRange: '30-40',
@@ -172,6 +187,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Aaditya K',
+    voiceId: '8v5mN41yQdF0W7pS2xL1',
     gender: 'male',
     ageBracket: 'adult',
     ageRange: '35-45',
@@ -182,6 +198,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Monika Sogam',
+    voiceId: 'aEO01A4wXgf1O2C5X7oF',
     gender: 'female',
     ageBracket: 'adult',
     ageRange: '32-45',
@@ -192,6 +209,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Shanti',
+    voiceId: '5kM9v2w1s8pL4xN7bQ0r',
     gender: 'female',
     ageBracket: 'adult',
     ageRange: '35-48',
@@ -202,6 +220,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Kavita M',
+    voiceId: '7dF2n1w8s9kL0pM3vX5q',
     gender: 'female',
     ageBracket: 'adult',
     ageRange: '30-42',
@@ -212,6 +231,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Bina',
+    voiceId: 'AZnzlk1XvdvUeBnXmlld',
     gender: 'female',
     ageBracket: 'adult',
     ageRange: '40-50',
@@ -222,6 +242,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Dinanath',
+    voiceId: 'pqHfZKP75CvOlQylNhV4',
     gender: 'male',
     ageBracket: 'senior',
     ageRange: '60-75',
@@ -232,6 +253,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Shankar',
+    voiceId: 'VR6AewLTigWG4xSOukaG',
     gender: 'male',
     ageBracket: 'senior',
     ageRange: '55-68',
@@ -242,6 +264,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Kali Devi',
+    voiceId: 'oWAxZDxBAtAKXjvP3Wwf',
     gender: 'female',
     ageBracket: 'senior',
     ageRange: '60-75',
@@ -252,6 +275,7 @@ export const VOICES: VoiceProfile[] = [
   },
   {
     voiceName: 'Annapurna',
+    voiceId: 'XB0fDUnXU5powFXDhCwa',
     gender: 'female',
     ageBracket: 'senior',
     ageRange: '58-70',
