@@ -33,10 +33,31 @@ async function route() {
 }
 window.onhashchange = route;
 
+function googleCard(g) {
+  const flash = /google=connected/.test(location.hash) ? '<p style="color:var(--ok)">✔ Google Drive connect हो गया।</p>'
+    : /google=error/.test(location.hash) ? '<p class="err">Google connect नहीं हो पाया, दोबारा कोशिश करें।</p>' : '';
+  let body;
+  if (!g.configured) {
+    body = `<p class="mute">Google connect करने के लिए server पर <code>GOOGLE_CLIENT_ID</code> और <code>GOOGLE_CLIENT_SECRET</code> set करने होंगे (README में steps हैं)।
+      Google Console में Redirect URI यह डालें:<br><code>${esc(g.redirectUri)}</code></p>`;
+  } else if (!g.connected) {
+    body = `<p class="mute">Connect करते ही आपके Drive में “Database of Series” folder बनेगा और हर series का data, sheet और photos वहीं save होंगे।</p>
+      <a class="btn" href="/auth/google">🔗 Connect Google Drive</a>`;
+  } else {
+    body = `<div class="link"><span class="pill">✔ Connected</span>
+      ${g.rootUrl ? `<a class="btn ghost" target="_blank" rel="noopener" href="${esc(g.rootUrl)}">📁 Drive folder खोलें</a>` : ''}
+      <button class="ghost" id="gsync">⟳ Sync now</button><button class="danger" id="gdis">Disconnect</button></div>
+      <div class="mute" style="margin-top:8px">${g.pending ? 'Sync हो रहा है…' : g.lastSync ? 'Last sync: ' + new Date(g.lastSync).toLocaleString() : ''}</div>
+      ${g.lastError ? `<div class="err">Drive error: ${esc(g.lastError)}</div>` : ''}`;
+  }
+  return `<div class="card" style="margin:14px 0"><b>☁ Google Drive Backup</b>${flash}${body}</div>`;
+}
+
 async function home() {
-  const list = await api('/series');
+  const [list, g] = await Promise.all([api('/series'), api('/google')]);
   $('app').innerHTML = `
     <div class="top"><h1>🎬 My Web Series</h1><button class="ghost" id="lo">Logout</button></div>
+    ${googleCard(g)}
     <div class="card" style="margin:14px 0"><form id="nf" class="bar" style="margin:0">
       <input id="nn" placeholder="नई web series का नाम" maxlength="100">
       <button>+ Add Series</button></form><div class="err" id="ne"></div></div>
@@ -47,6 +68,8 @@ async function home() {
         <div class="stats"><span class="pill">👥 Crew ${s.crew}</span><span class="pill">🎭 Artists ${s.artists}</span></div>
       </div>`).join('')}</div>`;
   $('lo').onclick = logout;
+  if ($('gsync')) $('gsync').onclick = async () => { await api('/google/sync', { method: 'POST' }); setTimeout(route, 2500); };
+  if ($('gdis')) $('gdis').onclick = async () => { if (confirm('Google Drive disconnect करें? (Drive में पड़ा data वैसे ही रहेगा)')) { await api('/google/disconnect', { method: 'POST' }); route(); } };
   document.querySelectorAll('.series-card').forEach((c) => (c.onclick = () => (location.hash = 'series=' + c.dataset.id)));
   $('nf').onsubmit = async (e) => {
     e.preventDefault();
@@ -74,8 +97,12 @@ async function seriesView(sid) {
       <div class="link"><code>${esc(formLink(s))}</code>
       <button id="cp">Copy link</button>
       <a class="btn ghost" target="_blank" href="${esc(formLink(s))}">Open</a>
+      <a class="btn ghost" href="/api/admin/series/${s.id}/export.xlsx">⬇ Excel</a>
       <a class="btn ghost" href="/api/admin/series/${s.id}/export.csv">⬇ CSV</a>
-      <button class="ghost" onclick="print()">🖨 Print</button></div></div>
+      <button class="ghost" onclick="print()">🖨 Print</button></div>
+      ${s.drive && s.drive.folderUrl ? `<div class="link" style="margin-top:10px"><span class="mute">Google Drive:</span>
+        <a target="_blank" rel="noopener" href="${esc(s.drive.folderUrl)}">📁 Series folder</a>
+        ${s.drive.sheetUrl ? `<a target="_blank" rel="noopener" href="${esc(s.drive.sheetUrl)}">📊 Google Sheet</a>` : ''}</div>` : ''}</div>
     <div class="bar noprint"><div class="tabs">${tabs.map(([k, l]) => `<button data-t="${k}" class="${state.tab === k ? 'on' : ''}">${esc(l)} (${count(k)})</button>`).join('')}</div></div>
     <div class="bar noprint"><input id="q" placeholder="🔍 नाम / phone / role / character खोजें" value="${esc(state.q)}"></div>
     ${!shown.length ? '<p class="mute">अभी कोई entry नहीं है।</p>' : ''}

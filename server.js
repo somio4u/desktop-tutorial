@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { departments } = require('./config');
+const exporter = require('./export');
 
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
@@ -99,11 +100,10 @@ function removePhoto(m) {
   if (m.photo) fs.rmSync(path.join(UPLOAD_DIR, path.basename(m.photo)), { force: true });
 }
 
-const csvCell = (v) => {
-  let s = String(v == null ? '' : v);
-  if (/^[=+\-@]/.test(s)) s = "'" + s; // avoid spreadsheet formula injection
-  return '"' + s.replace(/"/g, '""') + '"';
-};
+const google = require('./google')({
+  db, save, dataDir: DATA_DIR, uploadDir: UPLOAD_DIR,
+  buildRows: (s) => exporter.rowsFor(db, s, departments), toCsv: exporter.csv,
+});
 
 // ---------- routes ----------
 const STATIC = {
@@ -152,9 +152,10 @@ async function handle(req, res) {
       if (!file) return send(res, 400, { error: 'Selfie सही नहीं है' });
       member.photo = file;
     }
-    if (existing) Object.assign(existing, member, { updatedAt: new Date().toISOString() });
+    if (existing) Object.assign(existing, member, { updatedAt: new Date().toISOString() }, member.photo ? { photoDirty: true } : {});
     else db.members.push({ id: mid, seriesId: s.id, ...member, createdAt: new Date().toISOString() });
     save();
+    google.syncSeriesLater(s.id);
     return send(res, 200, { ok: true, updated: !!existing });
   }
 
@@ -166,7 +167,7 @@ async function handle(req, res) {
     if (a.length === b.length && crypto.timingSafeEqual(a, b)) {
       const sid = crypto.randomBytes(24).toString('hex');
       sessions.add(sid);
-      res.setHeader('Set-Cookie', `sid=${sid}; HttpOnly; SameSite=Strict; Path=/; Max-Age=2592000`);
+      res.setHeader('Set-Cookie', `sid=${sid}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000`);
       return send(res, 200, { ok: true });
     }
     return send(res, 401, { error: 'गलत password' });
@@ -175,6 +176,23 @@ async function handle(req, res) {
     sessions.delete(cookies(req).sid);
     res.setHeader('Set-Cookie', 'sid=; Path=/; Max-Age=0');
     return send(res, 200, { ok: true });
+  }
+
+  // ----- Google Drive OAuth (browser redirects; admin cookie required) -----
+  if (method === 'GET' && p === '/auth/google') {
+    if (!isAdmin(req)) return send(res, 401, 'Login required', 'text/plain');
+    if (!google.configured()) return send(res, 400, 'GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET not set', 'text/plain');
+    res.writeHead(302, { Location: google.authUrl(req) });
+    return res.end();
+  }
+  if (method === 'GET' && p === '/auth/google/callback') {
+    if (!isAdmin(req)) return send(res, 401, 'Login required', 'text/plain');
+    let ok = false;
+    try {
+      if (url.searchParams.get('code')) { await google.handleCallback(req, url.searchParams.get('code'), url.searchParams.get('state')); ok = true; }
+    } catch (x) { console.error(x.message); }
+    res.writeHead(302, { Location: '/#google=' + (ok ? 'connected' : 'error') });
+    return res.end();
   }
 
   // ----- admin API -----
@@ -187,6 +205,13 @@ async function handle(req, res) {
       return send(res, 200, fs.readFileSync(f), 'image/jpeg');
     }
     if (method === 'GET' && p === '/api/admin/me') return send(res, 200, { ok: true });
+    if (method === 'GET' && p === '/api/admin/google') return send(res, 200, google.info(req));
+    if (method === 'POST' && p === '/api/admin/google/disconnect') { google.disconnect(); return send(res, 200, { ok: true }); }
+    if (method === 'POST' && p === '/api/admin/google/sync') {
+      if (!google.connected()) return send(res, 400, { error: 'Google connected नहीं है' });
+      google.syncAll();
+      return send(res, 200, { ok: true });
+    }
 
     if (method === 'GET' && p === '/api/admin/series') {
       return send(res, 200, db.series.map((s) => {
@@ -216,14 +241,14 @@ async function handle(req, res) {
       }
       if (method === 'GET') return send(res, 200, { ...s, members: db.members.filter((x) => x.seriesId === s.id) });
     }
-    if (method === 'GET' && (m = /^\/api\/admin\/series\/([a-f0-9]+)\/export\.csv$/.exec(p))) {
+    if (method === 'GET' && (m = /^\/api\/admin\/series\/([a-f0-9]+)\/export\.(csv|xlsx)$/.exec(p))) {
       const s = db.series.find((x) => x.id === m[1]);
       if (!s) return send(res, 404, { error: 'not found' });
-      const rows = [['Type', 'Name', 'Department', 'Designation', 'Character', 'Age', 'Gender', 'Phone', 'Added']];
-      db.members.filter((x) => x.seriesId === s.id).forEach((x) =>
-        rows.push([x.type === 'artist' ? 'Artist' : 'Crew', x.name, x.department ? departments[x.department].label : '', x.designation, x.character || '', x.age || '', x.gender || '', x.phone, x.createdAt]));
-      res.setHeader('Content-Disposition', `attachment; filename="${s.slug}.csv"`);
-      return send(res, 200, '﻿' + rows.map((r) => r.map(csvCell).join(',')).join('\n'), 'text/csv');
+      const rows = exporter.rowsFor(db, s, departments);
+      res.setHeader('Content-Disposition', `attachment; filename="${s.slug}.${m[2]}"`);
+      return m[2] === 'csv'
+        ? send(res, 200, exporter.csv(rows), 'text/csv')
+        : send(res, 200, exporter.xlsx(rows, s.name), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     }
     if (method === 'DELETE' && (m = /^\/api\/admin\/members\/([a-f0-9]+)$/.exec(p))) {
       const x = db.members.find((y) => y.id === m[1]);
@@ -231,6 +256,7 @@ async function handle(req, res) {
       removePhoto(x);
       db.members = db.members.filter((y) => y.id !== x.id);
       save();
+      google.syncSeriesLater(x.seriesId);
       return send(res, 200, { ok: true });
     }
   }
