@@ -8,7 +8,7 @@ const exporter = require('./export');
 
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
-const DATA_DIR = path.join(__dirname, 'data');
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 const PUBLIC = path.join(__dirname, 'public');
@@ -34,6 +34,9 @@ function cookies(req) {
   });
   return out;
 }
+// login brute-force guard: 10 wrong passwords / 15 min / IP
+const fails = new Map();
+const clientIp = (req) => String(req.headers['x-forwarded-for'] || req.socket.remoteAddress).split(',')[0].trim();
 const isAdmin = (req) => sessions.has(cookies(req).sid);
 
 // ---------- helpers ----------
@@ -123,6 +126,7 @@ async function handle(req, res) {
   if (method === 'GET' && STATIC[p]) {
     return send(res, 200, fs.readFileSync(path.join(PUBLIC, STATIC[p][0])), STATIC[p][1]);
   }
+  if (method === 'GET' && p === '/healthz') return send(res, 200, 'ok', 'text/plain');
   if (method === 'GET' && p === '/api/config') return send(res, 200, departments);
   let m;
   if (method === 'GET' && (m = /^\/s\/([a-z0-9-]+)$/.exec(p))) {
@@ -162,14 +166,20 @@ async function handle(req, res) {
   // ----- admin auth -----
   if (method === 'POST' && p === '/api/login') {
     const body = await readBody(req).catch(() => ({}));
+    const ip = clientIp(req);
+    const f = fails.get(ip);
+    if (f && f.n >= 10 && Date.now() - f.t < 15 * 60 * 1000) return send(res, 429, { error: 'बहुत कोशिशें हुईं, 15 मिनट बाद आज़माएँ' });
     const a = Buffer.from(String(body.password || ''));
     const b = Buffer.from(ADMIN_PASSWORD);
     if (a.length === b.length && crypto.timingSafeEqual(a, b)) {
       const sid = crypto.randomBytes(24).toString('hex');
       sessions.add(sid);
-      res.setHeader('Set-Cookie', `sid=${sid}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000`);
+      fails.delete(ip);
+      const secure = req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '';
+      res.setHeader('Set-Cookie', `sid=${sid}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000${secure}`);
       return send(res, 200, { ok: true });
     }
+    fails.set(ip, { n: (f && Date.now() - f.t < 15 * 60 * 1000 ? f.n : 0) + 1, t: Date.now() });
     return send(res, 401, { error: 'गलत password' });
   }
   if (method === 'POST' && p === '/api/logout') {
@@ -271,4 +281,5 @@ http.createServer((req, res) => {
 }).listen(PORT, () => {
   console.log(`Running on http://localhost:${PORT}`);
   if (!process.env.ADMIN_PASSWORD) console.log('⚠ Default admin password "admin123" — set ADMIN_PASSWORD env var.');
+  console.log('Data directory:', DATA_DIR);
 });
