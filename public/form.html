@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="hi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cast & Crew Registration</title><link rel="stylesheet" href="/app.css"></head>
+<body><div class="wrap narrow">
+<div id="loading" class="mute">Loading…</div>
+<div id="notfound" class="hidden card">यह link सही नहीं है।</div>
+<div id="main" class="hidden">
+  <div class="mute">Cast &amp; Crew Registration</div>
+  <h1 id="title"></h1>
+  <p class="mute">अपनी details भरें। (Fill in your details)</p>
+  <div class="card">
+    <label>आप कौन हैं? (Who are you?)</label>
+    <div class="seg"><button type="button" id="b-crew" class="on">Crew</button><button type="button" id="b-artist">Artist</button></div>
+    <form id="f" novalidate>
+      <label for="name">नाम (Name)</label><input id="name" autocomplete="name" maxlength="100">
+      <label for="phone">Phone number</label><input id="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20">
+
+      <div id="crew-fields">
+        <label for="dept">Department</label><select id="dept"><option value="">— चुनें —</option></select>
+        <div id="role-wrap" class="hidden"><label for="role">Designation</label><select id="role"></select></div>
+        <div id="role-text-wrap" class="hidden"><label for="roletext">Designation</label><input id="roletext" maxlength="100" placeholder="जैसे: Production Manager"></div>
+      </div>
+
+      <div id="artist-fields" class="hidden">
+        <label for="character">Character का नाम (जो आप play कर रहे हैं)</label><input id="character" maxlength="100">
+        <label for="age">Age</label><input id="age" type="number" inputmode="numeric" min="1" max="119">
+        <label for="gender">Gender</label>
+        <select id="gender"><option value="">— चुनें —</option><option>Male</option><option>Female</option><option>Other</option></select>
+        <label>Selfie</label>
+        <div class="selfie-box">
+          <img id="preview" class="hidden" alt="selfie">
+          <div><button type="button" class="ghost" id="selfieBtn">📷 Selfie लें</button>
+          <input id="selfie" type="file" accept="image/*" capture="user" class="hidden"></div>
+        </div>
+      </div>
+      <div class="err" id="err"></div>
+      <button class="full" id="submit" type="submit">Submit</button>
+    </form>
+  </div>
+</div>
+<div id="done" class="hidden card done"><div class="tick">✔</div><h2>धन्यवाद!</h2><p class="mute" id="doneMsg">आपकी details save हो गईं।</p></div>
+</div><script src="/form.js"></script></body></html>

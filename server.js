@@ -1,0 +1,248 @@
+'use strict';
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const { departments } = require('./config');
+
+const PORT = process.env.PORT || 3000;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+const DATA_DIR = path.join(__dirname, 'data');
+const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
+const DB_FILE = path.join(DATA_DIR, 'db.json');
+const PUBLIC = path.join(__dirname, 'public');
+fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+// ---------- tiny JSON database ----------
+let db = { series: [], members: [] };
+if (fs.existsSync(DB_FILE)) db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+function save() {
+  const tmp = DB_FILE + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(db, null, 2));
+  fs.renameSync(tmp, DB_FILE);
+}
+const id = () => crypto.randomBytes(8).toString('hex');
+
+// ---------- auth (one admin password, in-memory sessions) ----------
+const sessions = new Set();
+function cookies(req) {
+  const out = {};
+  (req.headers.cookie || '').split(';').forEach((p) => {
+    const i = p.indexOf('=');
+    if (i > 0) out[p.slice(0, i).trim()] = decodeURIComponent(p.slice(i + 1).trim());
+  });
+  return out;
+}
+const isAdmin = (req) => sessions.has(cookies(req).sid);
+
+// ---------- helpers ----------
+function send(res, code, body, type = 'application/json') {
+  res.writeHead(code, { 'Content-Type': type + (type.startsWith('text') || type.includes('json') ? '; charset=utf-8' : '') });
+  res.end(type === 'application/json' ? JSON.stringify(body) : body);
+}
+function readBody(req, limit = 4 * 1024 * 1024) {
+  return new Promise((resolve, reject) => {
+    let size = 0;
+    const chunks = [];
+    req.on('data', (c) => {
+      size += c.length;
+      if (size > limit) { reject(new Error('Too large')); req.destroy(); return; }
+      chunks.push(c);
+    });
+    req.on('end', () => {
+      try { resolve(JSON.parse(Buffer.concat(chunks).toString() || '{}')); } catch { reject(new Error('Bad JSON')); }
+    });
+  });
+}
+const clean = (s, max = 100) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, max);
+const phoneOk = (p) => /^\+?[0-9 \-]{8,16}$/.test(p);
+const slugify = (s) => clean(s, 40).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'series';
+
+function validate(body) {
+  const type = body.type === 'artist' ? 'artist' : 'crew';
+  const m = { type, name: clean(body.name), phone: clean(body.phone, 20) };
+  if (!m.name) return { error: 'नाम ज़रूरी है' };
+  if (!phoneOk(m.phone)) return { error: 'सही phone number डालें' };
+  if (type === 'crew') {
+    const dep = departments[body.department];
+    if (!dep) return { error: 'Department चुनें' };
+    m.department = body.department;
+    if (dep.roles) {
+      if (!dep.roles.includes(body.designation)) return { error: 'Designation चुनें' };
+      m.designation = body.designation;
+    } else {
+      m.designation = clean(body.designation);
+      if (!m.designation) return { error: 'Designation लिखें' };
+    }
+  } else {
+    m.character = clean(body.character);
+    if (!m.character) return { error: 'Character का नाम लिखें' };
+    const age = parseInt(body.age, 10);
+    if (!(age > 0 && age < 120)) return { error: 'सही Age डालें' };
+    m.age = age;
+    if (!['Male', 'Female', 'Other'].includes(body.gender)) return { error: 'Gender चुनें' };
+    m.gender = body.gender;
+    m.designation = 'Artist';
+  }
+  return { member: m };
+}
+
+function saveSelfie(dataUrl, memberId) {
+  const match = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl || '');
+  if (!match) return null;
+  const buf = Buffer.from(match[1], 'base64');
+  if (buf.length > 3 * 1024 * 1024 || buf[0] !== 0xff || buf[1] !== 0xd8) return null;
+  fs.writeFileSync(path.join(UPLOAD_DIR, memberId + '.jpg'), buf);
+  return memberId + '.jpg';
+}
+function removePhoto(m) {
+  if (m.photo) fs.rmSync(path.join(UPLOAD_DIR, path.basename(m.photo)), { force: true });
+}
+
+const csvCell = (v) => {
+  let s = String(v == null ? '' : v);
+  if (/^[=+\-@]/.test(s)) s = "'" + s; // avoid spreadsheet formula injection
+  return '"' + s.replace(/"/g, '""') + '"';
+};
+
+// ---------- routes ----------
+const STATIC = {
+  '/': ['admin.html', 'text/html'],
+  '/admin': ['admin.html', 'text/html'],
+  '/app.css': ['app.css', 'text/css'],
+  '/admin.js': ['admin.js', 'application/javascript'],
+  '/form.js': ['form.js', 'application/javascript'],
+};
+
+async function handle(req, res) {
+  const url = new URL(req.url, 'http://x');
+  const p = url.pathname;
+  const method = req.method;
+
+  // static files
+  if (method === 'GET' && STATIC[p]) {
+    return send(res, 200, fs.readFileSync(path.join(PUBLIC, STATIC[p][0])), STATIC[p][1]);
+  }
+  if (method === 'GET' && p === '/api/config') return send(res, 200, departments);
+  let m;
+  if (method === 'GET' && (m = /^\/s\/([a-z0-9-]+)$/.exec(p))) {
+    return send(res, 200, fs.readFileSync(path.join(PUBLIC, 'form.html')), 'text/html');
+  }
+
+  // ----- public API (form) -----
+  if (method === 'GET' && (m = /^\/api\/public\/([a-z0-9-]+)$/.exec(p))) {
+    const s = db.series.find((x) => x.slug === m[1]);
+    if (!s) return send(res, 404, { error: 'Series नहीं मिली' });
+    return send(res, 200, { name: s.name, description: s.description });
+  }
+  if (method === 'POST' && (m = /^\/api\/public\/([a-z0-9-]+)\/submit$/.exec(p))) {
+    const s = db.series.find((x) => x.slug === m[1]);
+    if (!s) return send(res, 404, { error: 'Series नहीं मिली' });
+    const body = await readBody(req);
+    const { member, error } = validate(body);
+    if (error) return send(res, 400, { error });
+    if (member.type === 'artist') {
+      if (!body.selfie) return send(res, 400, { error: 'Selfie ज़रूरी है' });
+    }
+    // same phone + same type in this series => update (re-submission), not duplicate
+    let existing = db.members.find((x) => x.seriesId === s.id && x.type === member.type && x.phone === member.phone);
+    const mid = existing ? existing.id : id();
+    if (member.type === 'artist') {
+      const file = saveSelfie(body.selfie, mid);
+      if (!file) return send(res, 400, { error: 'Selfie सही नहीं है' });
+      member.photo = file;
+    }
+    if (existing) Object.assign(existing, member, { updatedAt: new Date().toISOString() });
+    else db.members.push({ id: mid, seriesId: s.id, ...member, createdAt: new Date().toISOString() });
+    save();
+    return send(res, 200, { ok: true, updated: !!existing });
+  }
+
+  // ----- admin auth -----
+  if (method === 'POST' && p === '/api/login') {
+    const body = await readBody(req).catch(() => ({}));
+    const a = Buffer.from(String(body.password || ''));
+    const b = Buffer.from(ADMIN_PASSWORD);
+    if (a.length === b.length && crypto.timingSafeEqual(a, b)) {
+      const sid = crypto.randomBytes(24).toString('hex');
+      sessions.add(sid);
+      res.setHeader('Set-Cookie', `sid=${sid}; HttpOnly; SameSite=Strict; Path=/; Max-Age=2592000`);
+      return send(res, 200, { ok: true });
+    }
+    return send(res, 401, { error: 'गलत password' });
+  }
+  if (method === 'POST' && p === '/api/logout') {
+    sessions.delete(cookies(req).sid);
+    res.setHeader('Set-Cookie', 'sid=; Path=/; Max-Age=0');
+    return send(res, 200, { ok: true });
+  }
+
+  // ----- admin API -----
+  if (p.startsWith('/api/admin') || p.startsWith('/uploads/')) {
+    if (!isAdmin(req)) return send(res, 401, { error: 'Login required' });
+
+    if (method === 'GET' && (m = /^\/uploads\/([a-f0-9]+\.jpg)$/.exec(p))) {
+      const f = path.join(UPLOAD_DIR, m[1]);
+      if (!fs.existsSync(f)) return send(res, 404, { error: 'not found' });
+      return send(res, 200, fs.readFileSync(f), 'image/jpeg');
+    }
+    if (method === 'GET' && p === '/api/admin/me') return send(res, 200, { ok: true });
+
+    if (method === 'GET' && p === '/api/admin/series') {
+      return send(res, 200, db.series.map((s) => {
+        const ms = db.members.filter((x) => x.seriesId === s.id);
+        return { ...s, crew: ms.filter((x) => x.type === 'crew').length, artists: ms.filter((x) => x.type === 'artist').length };
+      }));
+    }
+    if (method === 'POST' && p === '/api/admin/series') {
+      const body = await readBody(req);
+      const name = clean(body.name);
+      if (!name) return send(res, 400, { error: 'Series का नाम लिखें' });
+      let slug = slugify(name) + '-' + crypto.randomBytes(3).toString('hex'); // unguessable link
+      const s = { id: id(), name, description: clean(body.description, 200), slug, createdAt: new Date().toISOString() };
+      db.series.push(s);
+      save();
+      return send(res, 200, s);
+    }
+    if ((m = /^\/api\/admin\/series\/([a-f0-9]+)$/.exec(p))) {
+      const s = db.series.find((x) => x.id === m[1]);
+      if (!s) return send(res, 404, { error: 'not found' });
+      if (method === 'DELETE') {
+        db.members.filter((x) => x.seriesId === s.id).forEach(removePhoto);
+        db.members = db.members.filter((x) => x.seriesId !== s.id);
+        db.series = db.series.filter((x) => x.id !== s.id);
+        save();
+        return send(res, 200, { ok: true });
+      }
+      if (method === 'GET') return send(res, 200, { ...s, members: db.members.filter((x) => x.seriesId === s.id) });
+    }
+    if (method === 'GET' && (m = /^\/api\/admin\/series\/([a-f0-9]+)\/export\.csv$/.exec(p))) {
+      const s = db.series.find((x) => x.id === m[1]);
+      if (!s) return send(res, 404, { error: 'not found' });
+      const rows = [['Type', 'Name', 'Department', 'Designation', 'Character', 'Age', 'Gender', 'Phone', 'Added']];
+      db.members.filter((x) => x.seriesId === s.id).forEach((x) =>
+        rows.push([x.type === 'artist' ? 'Artist' : 'Crew', x.name, x.department ? departments[x.department].label : '', x.designation, x.character || '', x.age || '', x.gender || '', x.phone, x.createdAt]));
+      res.setHeader('Content-Disposition', `attachment; filename="${s.slug}.csv"`);
+      return send(res, 200, '﻿' + rows.map((r) => r.map(csvCell).join(',')).join('\n'), 'text/csv');
+    }
+    if (method === 'DELETE' && (m = /^\/api\/admin\/members\/([a-f0-9]+)$/.exec(p))) {
+      const x = db.members.find((y) => y.id === m[1]);
+      if (!x) return send(res, 404, { error: 'not found' });
+      removePhoto(x);
+      db.members = db.members.filter((y) => y.id !== x.id);
+      save();
+      return send(res, 200, { ok: true });
+    }
+  }
+  send(res, 404, { error: 'Not found' });
+}
+
+http.createServer((req, res) => {
+  handle(req, res).catch((e) => {
+    console.error(e);
+    if (!res.headersSent) send(res, e.message === 'Too large' ? 413 : 400, { error: e.message });
+  });
+}).listen(PORT, () => {
+  console.log(`Running on http://localhost:${PORT}`);
+  if (!process.env.ADMIN_PASSWORD) console.log('⚠ Default admin password "admin123" — set ADMIN_PASSWORD env var.');
+});

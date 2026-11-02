@@ -1,0 +1,8 @@
+{
+  "name": "series-cast-crew",
+  "version": "1.0.0",
+  "description": "Web series cast & crew database with shareable registration forms",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" }
+}
