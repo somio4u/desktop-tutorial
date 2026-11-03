@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="hi"><head><base target="_top"><meta charset="utf-8">
+<?!= include('styles') ?>
+</head>
+<body><div class="wrap narrow">
+<div id="notfound" class="hidden card">यह link सही नहीं है।</div>
+<div id="main" class="hidden">
+  <div class="mute">Cast &amp; Crew Registration</div>
+  <h1 id="title"></h1>
+  <p class="mute">अपनी details भरें। (Fill in your details)</p>
+  <div class="card">
+    <label>आप कौन हैं? (Who are you?)</label>
+    <div class="seg"><button type="button" id="b-crew" class="on">Crew</button><button type="button" id="b-artist">Artist</button></div>
+    <form id="f" novalidate>
+      <label for="name">नाम (Name)</label><input id="name" autocomplete="name" maxlength="100">
+      <label for="phone">Phone number</label><input id="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20">
+
+      <div id="crew-fields">
+        <label for="dept">Department</label><select id="dept"><option value="">— चुनें —</option></select>
+        <div id="role-wrap" class="hidden"><label for="role">Designation</label><select id="role"></select></div>
+        <div id="role-text-wrap" class="hidden"><label for="roletext">Designation</label><input id="roletext" maxlength="100" placeholder="जैसे: Production Manager"></div>
+      </div>
+
+      <div id="artist-fields" class="hidden">
+        <label for="character">Character का नाम (जो आप play कर रहे हैं)</label><input id="character" maxlength="100">
+        <label for="age">Age</label><input id="age" type="number" inputmode="numeric" min="1" max="119">
+        <label for="gender">Gender</label>
+        <select id="gender"><option value="">— चुनें —</option><option>Male</option><option>Female</option><option>Other</option></select>
+        <label>Selfie</label>
+        <div class="selfie-box">
+          <img id="preview" class="hidden" alt="selfie">
+          <div><button type="button" class="ghost" id="selfieBtn">📷 Selfie लें</button>
+          <input id="selfie" type="file" accept="image/*" capture="user" class="hidden"></div>
+        </div>
+      </div>
+      <div class="err" id="err"></div>
+      <button class="full" id="submit" type="submit">Submit</button>
+    </form>
+  </div>
+</div>
+<div id="done" class="hidden card done"><div class="tick">✔</div><h2>धन्यवाद!</h2><p class="mute" id="doneMsg">आपकी details save हो गईं।</p></div>
+</div>
+<script>
+const DATA = <?!= data ?>;
+const $ = (i) => document.getElementById(i);
+const cfg = DATA.departments;
+let type = 'crew', selfie = '';
+const run = (fn, ...a) => new Promise((ok, no) => google.script.run.withSuccessHandler(ok).withFailureHandler((e) => no(new Error((e && e.message) || String(e))))[fn](...a));
+
+if (!DATA.found) $('notfound').classList.remove('hidden');
+else {
+  $('title').textContent = DATA.name;
+  Object.keys(cfg).forEach((k) => $('dept').add(new Option(cfg[k].label, k)));
+  $('main').classList.remove('hidden');
+}
+
+function setType(t) {
+  type = t;
+  $('b-crew').classList.toggle('on', t === 'crew');
+  $('b-artist').classList.toggle('on', t === 'artist');
+  $('crew-fields').classList.toggle('hidden', t !== 'crew');
+  $('artist-fields').classList.toggle('hidden', t !== 'artist');
+  $('err').textContent = '';
+}
+$('b-crew').onclick = () => setType('crew');
+$('b-artist').onclick = () => setType('artist');
+
+$('dept').onchange = () => {
+  const d = cfg[$('dept').value];
+  $('role-wrap').classList.toggle('hidden', !d || !d.roles);
+  $('role-text-wrap').classList.toggle('hidden', !d || !!d.roles);
+  if (d && d.roles) {
+    const r = $('role'); r.innerHTML = '<option value="">— चुनें —</option>';
+    d.roles.forEach((x) => r.add(new Option(x, x)));
+  }
+};
+
+$('selfieBtn').onclick = () => $('selfie').click();
+$('selfie').onchange = () => {
+  const f = $('selfie').files[0];
+  if (!f) return;
+  const img = new Image();
+  img.onload = () => {
+    const max = 800, k = Math.min(1, max / Math.max(img.width, img.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    selfie = c.toDataURL('image/jpeg', 0.8);
+    $('preview').src = selfie; $('preview').classList.remove('hidden');
+    URL.revokeObjectURL(img.src);
+  };
+  img.src = URL.createObjectURL(f);
+};
+
+$('f').onsubmit = async (e) => {
+  e.preventDefault();
+  const err = (m) => ($('err').textContent = m);
+  err('');
+  const body = { type, name: $('name').value, phone: $('phone').value };
+  if (!body.name.trim()) return err('नाम लिखें');
+  if (!/^\+?[0-9 \-]{8,16}$/.test(body.phone.trim())) return err('सही phone number डालें');
+  if (type === 'crew') {
+    body.department = $('dept').value;
+    if (!body.department) return err('Department चुनें');
+    body.designation = cfg[body.department].roles ? $('role').value : $('roletext').value;
+    if (!body.designation.trim()) return err('Designation चुनें / लिखें');
+  } else {
+    Object.assign(body, { character: $('character').value, age: $('age').value, gender: $('gender').value, selfie });
+    if (!body.character.trim()) return err('Character का नाम लिखें');
+    if (!body.age) return err('Age डालें');
+    if (!body.gender) return err('Gender चुनें');
+    if (!selfie) return err('Selfie लें');
+  }
+  $('submit').disabled = true;
+  try {
+    const j = await run('submitEntry', DATA.slug, body);
+    if (j.updated) $('doneMsg').textContent = 'आपकी पुरानी entry update हो गई।';
+    $('main').classList.add('hidden'); $('done').classList.remove('hidden');
+  } catch (x) { err(x.message); $('submit').disabled = false; }
+};
+</script></body></html>

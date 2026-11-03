@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="hi"><head><base target="_top"><meta charset="utf-8">
+<?!= include('styles') ?>
+</head>
+<body><div class="wrap">
+<div id="login" class="hidden card" style="max-width:380px;margin:12vh auto">
+  <h1>🎬 Dashboard Login</h1>
+  <div id="warn" class="err hidden">पहले Apps Script में <code>Code.gs</code> खोलकर <code>ADMIN_PASSWORD</code> बदलें और दोबारा Deploy करें।</div>
+  <form id="lf"><label>Password</label><input id="pw" type="password" autofocus>
+  <div class="err" id="lerr"></div><button class="full">Login</button></form>
+</div>
+<div id="app" class="hidden"></div>
+<div id="lb" class="lightbox hidden"><img id="lbimg" alt=""></div>
+</div>
+<script>
+const DATA = <?!= data ?>;
+const $ = (i) => document.getElementById(i);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const cfg = DATA.departments;
+const run = (fn, ...a) => new Promise((ok, no) => google.script.run.withSuccessHandler(ok).withFailureHandler((e) => no(new Error((e && e.message) || String(e))))[fn](...a));
+const store = { get: () => { try { return sessionStorage.getItem('tok'); } catch (e) { return mem; } }, set: (v) => { mem = v; try { v ? sessionStorage.setItem('tok', v) : sessionStorage.removeItem('tok'); } catch (e) {} } };
+let mem = null, token = null;
+const S = { view: 'home', slug: null, tab: 'all', q: '', data: null, photos: {} };
+
+// every server call goes through api(): attaches the token, and falls back to login if it expired
+async function api(fn, ...a) {
+  try { return await run(fn, token, ...a); }
+  catch (e) { if (/LOGIN/.test(e.message)) { showLogin(); throw new Error('login'); } throw e; }
+}
+function showLogin() { token = null; store.set(null); $('app').classList.add('hidden'); $('login').classList.remove('hidden'); }
+if (!DATA.passwordSet) $('warn').classList.remove('hidden');
+$('lf').onsubmit = async (e) => {
+  e.preventDefault();
+  $('lerr').textContent = '';
+  try { token = await run('login', $('pw').value); store.set(token); $('login').classList.add('hidden'); $('pw').value = ''; go('home'); }
+  catch (x) { $('lerr').textContent = x.message; }
+};
+async function logout() { try { await run('logout', token); } catch (e) {} showLogin(); }
+const formLink = (s) => DATA.baseUrl + '?s=' + s.slug;
+async function copy(text, btn) {
+  try { await navigator.clipboard.writeText(text); } catch (e) { prompt('Copy this link:', text); }
+  if (btn) { const t = btn.textContent; btn.textContent = 'Copied ✔'; setTimeout(() => (btn.textContent = t), 1500); }
+}
+function busy(msg) { $('app').innerHTML = '<p class="mute">' + esc(msg || 'Loading…') + '</p>'; }
+async function go(view, slug) {
+  S.view = view; if (slug) { S.slug = slug; S.tab = 'all'; S.q = ''; S.photos = {}; }
+  $('app').classList.remove('hidden'); busy();
+  try { view === 'home' ? await home() : await seriesView(); }
+  catch (e) { if (e.message !== 'login') $('app').innerHTML = '<p class="err">' + esc(e.message) + '</p><button class="ghost" id="rb">← वापस</button>'; if ($('rb')) $('rb').onclick = () => go('home'); }
+}
+
+async function home() {
+  const list = await api('listSeries');
+  $('app').innerHTML = `
+    <div class="top"><h1>🎬 My Web Series</h1><button class="ghost" id="lo">Logout</button></div>
+    <div class="card" style="margin:14px 0"><form id="nf" class="bar" style="margin:0">
+      <input id="nn" placeholder="नई web series का नाम" maxlength="100">
+      <button id="nb">+ Add Series</button></form><div class="err" id="ne"></div>
+      <div class="mute" style="margin-top:8px">☁ सारा data आपके Google Drive के “Database of Series” folder में अपने-आप save होता है।</div></div>
+    ${list.length ? '' : '<p class="mute">अभी कोई series नहीं है। ऊपर से पहली series बनाएँ।</p>'}
+    <div class="grid">${list.map((s) => `
+      <div class="card series-card" data-slug="${esc(s.slug)}">
+        <h3>${esc(s.name)}</h3><div class="mute">${esc(new Date(s.created).toLocaleDateString())}</div>
+        <div class="stats"><span class="pill">👥 Crew ${esc(s.crew)}</span><span class="pill">🎭 Artists ${esc(s.artists)}</span></div>
+      </div>`).join('')}</div>`;
+  $('lo').onclick = logout;
+  document.querySelectorAll('.series-card').forEach((c) => (c.onclick = () => go('series', c.dataset.slug)));
+  $('nf').onsubmit = async (e) => {
+    e.preventDefault();
+    $('nb').disabled = true; $('ne').textContent = 'बन रही है… (Drive में folder और Sheet बन रही है)';
+    try { const s = await api('createSeries', $('nn').value); go('series', s.slug); }
+    catch (x) { $('ne').textContent = x.message; $('nb').disabled = false; }
+  };
+}
+
+function render() {
+  const { series: s, members: all } = S.data;
+  const tabs = [['all', 'All'], ...Object.keys(cfg).map((k) => [k, cfg[k].label]), ['artist', 'Artists']];
+  const inTab = (m, k) => k === 'all' || (k === 'artist' ? m.type === 'artist' : m.department === k);
+  const q = S.q.toLowerCase();
+  const shown = all.filter((m) => inTab(m, S.tab) && (!q || [m.name, m.phone, m.designation, m.character].some((v) => String(v || '').toLowerCase().includes(q))));
+  const crew = shown.filter((m) => m.type === 'crew'), artists = shown.filter((m) => m.type === 'artist');
+  $('app').innerHTML = `
+    <div class="top noprint"><button class="ghost" id="back">← सभी Series</button><button class="ghost" id="lo">Logout</button></div>
+    <h1>${esc(s.name)}</h1>
+    <div class="card noprint"><div class="mute" style="margin-bottom:8px">इस series का form link (cast &amp; crew को भेजें):</div>
+      <div class="link"><code>${esc(formLink(s))}</code>
+      <button id="cp">Copy link</button>
+      <a class="btn ghost" target="_blank" rel="noopener" href="${esc(formLink(s))}">Open</a>
+      <button class="ghost" id="xl">⬇ Excel</button>
+      <button class="ghost" id="csv">⬇ CSV</button>
+      <button class="ghost" onclick="print()">🖨 Print</button></div>
+      <div class="link" style="margin-top:10px"><span class="mute">Google Drive:</span>
+        <a target="_blank" rel="noopener" href="${esc(s.folderUrl)}">📁 Series folder</a>
+        <a target="_blank" rel="noopener" href="${esc(s.sheetUrl)}">📊 Google Sheet</a></div></div>
+    <div class="bar noprint"><div class="tabs">${tabs.map(([k, l]) => `<button data-t="${esc(k)}" class="${S.tab === k ? 'on' : ''}">${esc(l)} (${all.filter((m) => inTab(m, k)).length})</button>`).join('')}</div></div>
+    <div class="bar noprint"><input id="q" placeholder="🔍 नाम / phone / role / character खोजें" value="${esc(S.q)}"></div>
+    ${!shown.length ? '<p class="mute">अभी कोई entry नहीं है।</p>' : ''}
+    ${crew.length ? `<h2>Crew (${crew.length})</h2><div class="card tbl"><table><thead><tr><th>Name</th><th>Department</th><th>Designation</th><th>Phone</th><th class="noprint"></th></tr></thead><tbody>
+      ${crew.map((m) => `<tr><td>${esc(m.name)}</td><td>${esc(m.departmentLabel)}</td><td>${esc(m.designation)}</td>
+      <td><a href="tel:${esc(m.phone)}">${esc(m.phone)}</a></td><td class="noprint"><button class="danger" data-del="${esc(m.id)}">Delete</button></td></tr>`).join('')}
+    </tbody></table></div>` : ''}
+    ${artists.length ? `<h2>Artists (${artists.length})</h2><div class="artists">
+      ${artists.map((m) => `<div class="card artist">
+        ${S.photos[m.id] ? `<img src="${S.photos[m.id]}" alt="${esc(m.name)}" data-zoom="${esc(m.id)}">` : `<div class="noimg" data-ph="${esc(m.id)}">${m.hasPhoto ? 'loading…' : 'no photo'}</div>`}
+        <b>${esc(m.name)}</b><div>🎭 ${esc(m.character)}</div>
+        <div class="mute">${esc(m.gender)} · ${esc(m.age)} yrs</div>
+        <a href="tel:${esc(m.phone)}">${esc(m.phone)}</a>
+        <button class="danger noprint" data-del="${esc(m.id)}">Delete</button></div>`).join('')}</div>` : ''}
+    <div class="noprint" style="margin-top:50px"><button class="danger" id="delS">इस Series को dashboard से हटाएँ</button></div>`;
+
+  $('back').onclick = () => go('home');
+  $('lo').onclick = logout;
+  $('cp').onclick = (e) => copy(formLink(s), e.target);
+  $('csv').onclick = () => downloadCsv();
+  $('xl').onclick = (e) => downloadXlsx(e.target);
+  document.querySelectorAll('[data-t]').forEach((b) => (b.onclick = () => { S.tab = b.dataset.t; render(); }));
+  $('q').oninput = (e) => { S.q = e.target.value; const p = e.target.selectionStart; render(); $('q').focus(); $('q').setSelectionRange(p, p); };
+  document.querySelectorAll('[data-del]').forEach((b) => (b.onclick = async () => {
+    if (!confirm('यह entry delete करें? (photo Drive के Trash में जाएगी)')) return;
+    try { await api('deleteMember', S.slug, b.dataset.del); await loadSeries(); } catch (x) { alert(x.message); }
+  }));
+  document.querySelectorAll('[data-zoom]').forEach((i) => (i.onclick = () => { $('lbimg').src = i.src; $('lb').classList.remove('hidden'); }));
+  $('delS').onclick = async () => {
+    if (!confirm(`"${s.name}" dashboard से हट जाएगी (${all.length} entries)। Drive में folder और Sheet वैसे ही रहेंगे। पक्का?`)) return;
+    try { await api('deleteSeries', S.slug); go('home'); } catch (x) { alert(x.message); }
+  };
+  loadPhotos();
+}
+$('lb').onclick = () => $('lb').classList.add('hidden');
+
+async function loadSeries() { S.data = await api('getSeries', S.slug); render(); }
+async function seriesView() { S.data = await api('getSeries', S.slug); render(); }
+let photoBusy = false;
+async function loadPhotos() {
+  if (photoBusy) return;
+  photoBusy = true;
+  try {
+    const need = S.data.members.filter((m) => m.hasPhoto && !S.photos[m.id]).map((m) => m.id);
+    for (let i = 0; i < need.length; i += 5) {
+      const slug = S.slug;
+      const got = await api('getPhotos', slug, need.slice(i, i + 5));
+      if (slug !== S.slug || S.view !== 'series') return;
+      Object.assign(S.photos, got);
+      Object.keys(got).forEach((id) => {
+        const ph = document.querySelector('[data-ph="' + id + '"]');
+        if (ph) { const img = document.createElement('img'); img.src = got[id]; img.dataset.zoom = id; img.onclick = () => { $('lbimg').src = img.src; $('lb').classList.remove('hidden'); }; ph.replaceWith(img); }
+      });
+    }
+  } catch (e) { /* photos are optional */ } finally { photoBusy = false; }
+}
+
+function saveBlob(blob, name) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+function downloadCsv() {
+  const cell = (v) => { let s = String(v == null ? '' : v); if (/^[=+\-@]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
+  const rows = [['Type', 'Name', 'Department', 'Designation', 'Character', 'Age', 'Gender', 'Phone', 'Photo link', 'Added']];
+  S.data.members.forEach((m) => rows.push([m.type === 'artist' ? 'Artist' : 'Crew', m.name, m.departmentLabel, m.designation, m.character, m.age, m.gender, m.phone, m.link, m.added]));
+  saveBlob(new Blob(['﻿' + rows.map((r) => r.map(cell).join(',')).join('\n')], { type: 'text/csv' }), S.slug + '.csv');
+}
+async function downloadXlsx(btn) {
+  const t = btn.textContent; btn.textContent = 'Preparing…'; btn.disabled = true;
+  try {
+    const r = await api('exportXlsx', S.slug);
+    const bin = atob(r.base64), u = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    saveBlob(new Blob([u], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), r.name);
+  } catch (x) { alert(x.message); } finally { btn.textContent = t; btn.disabled = false; }
+}
+
+(async () => {
+  token = store.get();
+  if (!token) return showLogin();
+  try { await run('checkToken', token); go('home'); } catch (e) { showLogin(); }
+})();
+</script></body></html>
