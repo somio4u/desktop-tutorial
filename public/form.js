@@ -52,6 +52,13 @@ $('selfie').onchange = () => {
   img.src = URL.createObjectURL(f);
 };
 
+$('another').onclick = () => {   // keep name + phone, clear everything entry-specific
+  ['dept', 'role', 'roletext', 'character', 'age', 'gender'].forEach((i) => ($(i).value = ''));
+  $('dept').onchange(); selfie = ''; $('selfie').value = ''; $('preview').classList.add('hidden');
+  $('err').textContent = ''; $('submit').disabled = false;
+  $('done').classList.add('hidden'); $('main').classList.remove('hidden');
+};
+
 $('f').onsubmit = async (e) => {
   e.preventDefault();
   const err = (m) => ($('err').textContent = m);
@@ -76,7 +83,7 @@ $('f').onsubmit = async (e) => {
     const r = await fetch('/api/public/' + slug + '/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const j = await r.json();
     if (!r.ok) throw new Error(j.error || 'Error');
-    if (j.updated) $('doneMsg').textContent = 'आपकी पुरानी entry update हो गई।';
+    $('doneMsg').textContent = j.duplicate ? 'यह entry पहले से जमा है (दोबारा नहीं जोड़ी)।' : 'आपकी entry save हो गई।';
     $('main').classList.add('hidden'); $('done').classList.remove('hidden');
   } catch (x) { err(x.message); $('submit').disabled = false; }
 };

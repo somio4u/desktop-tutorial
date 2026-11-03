@@ -127,23 +127,24 @@ function submitEntry(slug, body) {
     const sh = sheet_(s);
     const list = members_(sh);
     if (list.length >= MAX_ROWS) throw new Error('Is series me entries ki limit poori ho gayi');
-    const existing = list.filter((m) => m.type === type && m.phone === phone)[0];
-    const now = new Date().toISOString();
-    let fileId = existing ? existing.fileId : '', link = existing ? existing.link : '';
+    // One person may submit several entries (other role, other character, crew + artist).
+    // Only an exact repeat (same person + same role/character) is ignored, e.g. a double tap.
+    const digits = (p) => String(p).replace(/[^0-9+]/g, '');
+    const same = (a, b) => String(a).toLowerCase() === String(b).toLowerCase();
+    const dup = list.filter((m) => m.type === type && digits(m.phone) === digits(phone) && m.department === dept && same(m.designation, role) && same(m.character, character))[0];
+    if (dup) return { ok: true, duplicate: true };
+    let fileId = '', link = '';
     if (photoBytes) {
-      if (fileId) { try { DriveApp.getFileById(fileId).setTrashed(true); } catch (e) { /* already gone */ } }
       const fname = (character + '_' + name + '_' + phone + '.jpg').replace(/[\\/:*?"<>|]/g, '-');
       const f = DriveApp.getFolderById(s.photosId).createFile(Utilities.newBlob(photoBytes, 'image/jpeg', fname));
       fileId = f.getId(); link = f.getUrl();
     }
-    const row = [existing ? existing.id : Utilities.getUuid().replace(/-/g, '').slice(0, 12), type, name, dept, role, character, age, gender, phone, link, fileId,
-      existing ? existing.added : now, existing ? now : ''];
-    const r = existing ? existing.row : sh.getLastRow() + 1;
+    const row = [Utilities.getUuid().replace(/-/g, '').slice(0, 12), type, name, dept, role, character, age, gender, phone, link, fileId, new Date().toISOString(), ''];
+    const r = sh.getLastRow() + 1;
     // plain-text format first, so values like "=1+1" are never turned into formulas
-    const range = sh.getRange(r, 1, 1, HEAD.length);
-    range.setNumberFormat('@').setValues([row]);
+    sh.getRange(r, 1, 1, HEAD.length).setNumberFormat('@').setValues([row]);
     updateCounts_(s, members_(sh));
-    return { ok: true, updated: !!existing };
+    return { ok: true, duplicate: false };
   });
 }
 

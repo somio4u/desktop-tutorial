@@ -38,7 +38,9 @@
     </form>
   </div>
 </div>
-<div id="done" class="hidden card done"><div class="tick">✔</div><h2>धन्यवाद!</h2><p class="mute" id="doneMsg">आपकी details save हो गईं।</p></div>
+<div id="done" class="hidden card done"><div class="tick">✔</div><h2>धन्यवाद!</h2><p class="mute" id="doneMsg">आपकी entry save हो गई।</p>
+  <p class="mute">किसी और role / character के लिए भी entry करनी है?</p>
+  <button id="another" type="button">➕ एक और entry जोड़ें</button></div>
 </div>
 <script>
 const DATA = <?!= data ?>;
@@ -92,6 +94,13 @@ $('selfie').onchange = () => {
   img.src = URL.createObjectURL(f);
 };
 
+$('another').onclick = () => {   // keep name + phone, clear everything entry-specific
+  ['dept', 'role', 'roletext', 'character', 'age', 'gender'].forEach((i) => ($(i).value = ''));
+  $('dept').onchange(); selfie = ''; $('selfie').value = ''; $('preview').classList.add('hidden');
+  $('err').textContent = ''; $('submit').disabled = false;
+  $('done').classList.add('hidden'); $('main').classList.remove('hidden');
+};
+
 $('f').onsubmit = async (e) => {
   e.preventDefault();
   const err = (m) => ($('err').textContent = m);
@@ -114,7 +123,7 @@ $('f').onsubmit = async (e) => {
   $('submit').disabled = true;
   try {
     const j = await run('submitEntry', DATA.slug, body);
-    if (j.updated) $('doneMsg').textContent = 'आपकी पुरानी entry update हो गई।';
+    $('doneMsg').textContent = j.duplicate ? 'यह entry पहले से जमा है (दोबारा नहीं जोड़ी)।' : 'आपकी entry save हो गई।';
     $('main').classList.add('hidden'); $('done').classList.remove('hidden');
   } catch (x) { err(x.message); $('submit').disabled = false; }
 };

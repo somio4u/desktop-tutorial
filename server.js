@@ -148,19 +148,23 @@ async function handle(req, res) {
     if (member.type === 'artist') {
       if (!body.selfie) return send(res, 400, { error: 'Selfie ज़रूरी है' });
     }
-    // same phone + same type in this series => update (re-submission), not duplicate
-    let existing = db.members.find((x) => x.seriesId === s.id && x.type === member.type && x.phone === member.phone);
-    const mid = existing ? existing.id : id();
+    // One person may submit several entries (other role / character, crew + artist).
+    // Only an exact repeat (same person + same role/character) is ignored, e.g. a double tap.
+    const digits = (x) => String(x).replace(/[^0-9+]/g, '');
+    const lc = (x) => String(x || '').toLowerCase();
+    const dup = db.members.find((x) => x.seriesId === s.id && x.type === member.type && digits(x.phone) === digits(member.phone) &&
+      (x.department || '') === (member.department || '') && lc(x.designation) === lc(member.designation) && lc(x.character) === lc(member.character));
+    if (dup) return send(res, 200, { ok: true, duplicate: true });
+    const mid = id();
     if (member.type === 'artist') {
       const file = saveSelfie(body.selfie, mid);
       if (!file) return send(res, 400, { error: 'Selfie सही नहीं है' });
       member.photo = file;
     }
-    if (existing) Object.assign(existing, member, { updatedAt: new Date().toISOString() }, member.photo ? { photoDirty: true } : {});
-    else db.members.push({ id: mid, seriesId: s.id, ...member, createdAt: new Date().toISOString() });
+    db.members.push({ id: mid, seriesId: s.id, ...member, createdAt: new Date().toISOString() });
     save();
     google.syncSeriesLater(s.id);
-    return send(res, 200, { ok: true, updated: !!existing });
+    return send(res, 200, { ok: true, duplicate: false });
   }
 
   // ----- admin auth -----
