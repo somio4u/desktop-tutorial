@@ -123,8 +123,11 @@ function submitEntry(slug, body) {
     if (['Male', 'Female', 'Other'].indexOf(body.gender) < 0) throw new Error('ଲିଙ୍ଗ ବାଛନ୍ତୁ');
     gender = body.gender;
     role = 'Artist';
-    const b64 = String(body.selfie || '').replace(/^data:image\/jpeg;base64,/, '');
-    if (!b64) throw new Error('Selfie ଆବଶ୍ୟକ');
+  }
+  // selfie: required for artists, optional for crew
+  const b64 = String(body.selfie || '').replace(/^data:image\/jpeg;base64,/, '');
+  if (type === 'artist' && !b64) throw new Error('Selfie ଆବଶ୍ୟକ');
+  if (b64) {
     if (b64.length > 4 * 1024 * 1024) throw new Error('Selfie ବହୁତ ବଡ଼');
     try { photoBytes = Utilities.base64Decode(b64); } catch (e) { throw new Error('Selfie ଠିକ୍ ନୁହେଁ'); }
     if (!(photoBytes.length > 4 && photoBytes[0] === -1 && photoBytes[1] === -40)) throw new Error('Selfie ଠିକ୍ ନୁହେଁ');
@@ -141,7 +144,7 @@ function submitEntry(slug, body) {
     if (dup) return { ok: true, duplicate: true };
     let fileId = '', link = '';
     if (photoBytes) {
-      const fname = (character + '_' + name + '_' + phone + '.jpg').replace(/[\\/:*?"<>|]/g, '-');
+      const fname = ((character || role) + '_' + name + '_' + phone + '.jpg').replace(/[\\/:*?"<>|]/g, '-');
       const f = DriveApp.getFolderById(s.photosId).createFile(Utilities.newBlob(photoBytes, 'image/jpeg', fname));
       fileId = f.getId(); link = f.getUrl();
     }

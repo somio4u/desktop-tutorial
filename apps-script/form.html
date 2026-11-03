@@ -26,7 +26,10 @@
         <label for="age">ବୟସ (Age)</label><input id="age" type="number" inputmode="numeric" min="1" max="119">
         <label for="gender">ଲିଙ୍ଗ (Gender)</label>
         <select id="gender"><option value="">— ବାଛନ୍ତୁ —</option><option value="Male">ପୁରୁଷ (Male)</option><option value="Female">ମହିଳା (Female)</option><option value="Other">ଅନ୍ୟ (Other)</option></select>
-        <label>Selfie (ସେଲଫି)</label>
+      </div>
+
+      <div id="selfie-block">
+        <label id="selfieLabel">Selfie (ସେଲଫି)</label>
         <div class="selfie-box">
           <img id="preview" class="hidden" alt="selfie">
           <div><button type="button" class="ghost" id="selfieBtn">📷 Selfie ନିଅନ୍ତୁ</button>
@@ -62,8 +65,10 @@ function setType(t) {
   $('b-artist').classList.toggle('on', t === 'artist');
   $('crew-fields').classList.toggle('hidden', t !== 'crew');
   $('artist-fields').classList.toggle('hidden', t !== 'artist');
+  $('selfieLabel').textContent = t === 'artist' ? 'Selfie (ସେଲଫି)' : 'Selfie (ସେଲଫି) — ଇଚ୍ଛାଧୀନ (optional)';
   $('err').textContent = '';
 }
+setType('crew');
 $('b-crew').onclick = () => setType('crew');
 $('b-artist').onclick = () => setType('artist');
 
@@ -114,6 +119,7 @@ $('f').onsubmit = async (e) => {
     if (!body.department) return err('ବିଭାଗ ବାଛନ୍ତୁ');
     body.designation = cfg[body.department].roles ? $('role').value : $('roletext').value;
     if (!body.designation.trim()) return err('ପଦବୀ ବାଛନ୍ତୁ / ଲେଖନ୍ତୁ');
+    body.selfie = selfie;   // optional for crew
   } else {
     Object.assign(body, { character: $('character').value, age: $('age').value, gender: $('gender').value, selfie });
     if (!body.character.trim()) return err('ଚରିତ୍ରର ନାମ ଲେଖନ୍ତୁ');

@@ -73,6 +73,12 @@ async function home() {
   };
 }
 
+const THUMB = 'width:44px;height:44px;object-fit:cover;border-radius:8px;cursor:zoom-in;display:block';
+function thumb(m) {
+  if (!m.hasPhoto) return '';
+  return S.photos[m.id] ? `<img src="${S.photos[m.id]}" style="${THUMB}" alt="${esc(m.name)}" data-zoom="${esc(m.id)}">`
+    : `<div class="noimg" data-ph="${esc(m.id)}" data-sm="1" style="width:44px;height:44px;aspect-ratio:auto;font-size:.6rem">…</div>`;
+}
 function render() {
   const { series: s, members: all } = S.data;
   const tabs = [['all', 'All'], ...Object.keys(cfg).map((k) => [k, cfg[k].label]), ['artist', 'Casting (Artists)']];
@@ -96,8 +102,8 @@ function render() {
     <div class="bar noprint"><div class="tabs">${tabs.map(([k, l]) => `<button data-t="${esc(k)}" class="${S.tab === k ? 'on' : ''}">${esc(l)} (${all.filter((m) => inTab(m, k)).length})</button>`).join('')}</div></div>
     <div class="bar noprint"><input id="q" placeholder="🔍 ନାମ / phone / role / character ଖୋଜନ୍ତୁ" value="${esc(S.q)}"></div>
     ${!shown.length ? '<p class="mute">ଏଯାଏଁ କୌଣସି entry ନାହିଁ।</p>' : ''}
-    ${crew.length ? `<h2>Crew (${crew.length})</h2><div class="card tbl"><table><thead><tr><th>Name</th><th>Department</th><th>Designation</th><th>Phone</th><th class="noprint"></th></tr></thead><tbody>
-      ${crew.map((m) => `<tr><td>${esc(m.name)}</td><td>${esc(m.departmentLabel)}</td><td>${esc(m.designation)}</td>
+    ${crew.length ? `<h2>Crew (${crew.length})</h2><div class="card tbl"><table><thead><tr><th>Photo</th><th>Name</th><th>Department</th><th>Designation</th><th>Phone</th><th class="noprint"></th></tr></thead><tbody>
+      ${crew.map((m) => `<tr><td>${thumb(m)}</td><td>${esc(m.name)}</td><td>${esc(m.departmentLabel)}</td><td>${esc(m.designation)}</td>
       <td><a href="tel:${esc(m.phone)}">${esc(m.phone)}</a></td><td class="noprint"><button class="danger" data-del="${esc(m.id)}">Delete</button></td></tr>`).join('')}
     </tbody></table></div>` : ''}
     ${artists.length ? `<h2>Artists (${artists.length})</h2><div class="artists">
@@ -144,7 +150,7 @@ async function loadPhotos() {
       Object.assign(S.photos, got);
       Object.keys(got).forEach((id) => {
         const ph = document.querySelector('[data-ph="' + id + '"]');
-        if (ph) { const img = document.createElement('img'); img.src = got[id]; img.dataset.zoom = id; img.onclick = () => { $('lbimg').src = img.src; $('lb').classList.remove('hidden'); }; ph.replaceWith(img); }
+        if (ph) { const img = document.createElement('img'); img.src = got[id]; img.dataset.zoom = id; if (ph.dataset.sm) img.style.cssText = THUMB; img.onclick = () => { $('lbimg').src = img.src; $('lb').classList.remove('hidden'); }; ph.replaceWith(img); }
       });
     }
   } catch (e) { /* photos are optional */ } finally { photoBusy = false; }
