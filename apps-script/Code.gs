@@ -3,7 +3,7 @@
 //   Database of Series / <Series> / Artist Photos + "<Series> - Cast & Crew" (Google Sheet)
 // SETUP: 1) change ADMIN_PASSWORD below  2) run setup() once  3) Deploy > New deployment > Web app
 //        (Execute as: Me, Who has access: Anyone)
-const ADMIN_PASSWORD = 'CHANGE-ME';   // <-- yahan apna password likhein (quotes ke andar)
+const ADMIN_PASSWORD = 'admin';   // dashboard ka password
 
 const ROOT_NAME = 'Database of Series';
 const DEPARTMENTS = {
