@@ -3,44 +3,44 @@
 <?!= include('styles') ?>
 </head>
 <body><div class="wrap narrow">
-<div id="notfound" class="hidden card">यह link सही नहीं है।</div>
+<div id="notfound" class="hidden card">ଏହି link ଠିକ୍ ନୁହେଁ।</div>
 <div id="main" class="hidden">
   <div class="mute">Cast &amp; Crew Registration</div>
   <h1 id="title"></h1>
-  <p class="mute">अपनी details भरें। (Fill in your details)</p>
+  <p class="mute">ଆପଣଙ୍କ ବିବରଣୀ ପୂରଣ କରନ୍ତୁ। (Fill in your details)</p>
   <div class="card">
-    <label>आप कौन हैं? (Who are you?)</label>
+    <label>ଆପଣ କିଏ? (Who are you?)</label>
     <div class="seg"><button type="button" id="b-crew" class="on">Crew</button><button type="button" id="b-artist">Artist / Casting</button></div>
     <form id="f" novalidate>
-      <label for="name">नाम (Name)</label><input id="name" autocomplete="name" maxlength="100">
-      <label for="phone">Phone number</label><input id="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20">
+      <label for="name">ନାମ (Name)</label><input id="name" autocomplete="name" maxlength="100">
+      <label for="phone">ଫୋନ୍ ନମ୍ବର (Phone number)</label><input id="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20">
 
       <div id="crew-fields">
-        <label for="dept">Department</label><select id="dept"><option value="">— चुनें —</option></select>
-        <div id="role-wrap" class="hidden"><label for="role">Designation</label><select id="role"></select></div>
-        <div id="role-text-wrap" class="hidden"><label for="roletext">Designation</label><input id="roletext" maxlength="100" placeholder="जैसे: Production Manager"></div>
+        <label for="dept">ବିଭାଗ (Department)</label><select id="dept"><option value="">— ବାଛନ୍ତୁ —</option></select>
+        <div id="role-wrap" class="hidden"><label for="role">ପଦବୀ (Designation)</label><select id="role"></select></div>
+        <div id="role-text-wrap" class="hidden"><label for="roletext">ପଦବୀ (Designation)</label><input id="roletext" maxlength="100" placeholder="ଯେପରି: Production Manager"></div>
       </div>
 
       <div id="artist-fields" class="hidden">
-        <label for="character">Character का नाम (जो आप play कर रहे हैं)</label><input id="character" maxlength="100">
-        <label for="age">Age</label><input id="age" type="number" inputmode="numeric" min="1" max="119">
-        <label for="gender">Gender</label>
-        <select id="gender"><option value="">— चुनें —</option><option>Male</option><option>Female</option><option>Other</option></select>
-        <label>Selfie</label>
+        <label for="character">ଚରିତ୍ରର ନାମ (ଆପଣ ଯେଉଁ ଚରିତ୍ର କରୁଛନ୍ତି) (Character name)</label><input id="character" maxlength="100">
+        <label for="age">ବୟସ (Age)</label><input id="age" type="number" inputmode="numeric" min="1" max="119">
+        <label for="gender">ଲିଙ୍ଗ (Gender)</label>
+        <select id="gender"><option value="">— ବାଛନ୍ତୁ —</option><option value="Male">ପୁରୁଷ (Male)</option><option value="Female">ମହିଳା (Female)</option><option value="Other">ଅନ୍ୟ (Other)</option></select>
+        <label>Selfie (ସେଲଫି)</label>
         <div class="selfie-box">
           <img id="preview" class="hidden" alt="selfie">
-          <div><button type="button" class="ghost" id="selfieBtn">📷 Selfie लें</button>
+          <div><button type="button" class="ghost" id="selfieBtn">📷 Selfie ନିଅନ୍ତୁ</button>
           <input id="selfie" type="file" accept="image/*" capture="user" class="hidden"></div>
         </div>
       </div>
       <div class="err" id="err"></div>
-      <button class="full" id="submit" type="submit">Submit</button>
+      <button class="full" id="submit" type="submit">ଦାଖଲ କରନ୍ତୁ (Submit)</button>
     </form>
   </div>
 </div>
-<div id="done" class="hidden card done"><div class="tick">✔</div><h2>धन्यवाद!</h2><p class="mute" id="doneMsg">आपकी entry save हो गई।</p>
-  <p class="mute">किसी और role / character के लिए भी entry करनी है?</p>
-  <button id="another" type="button">➕ एक और entry जोड़ें</button></div>
+<div id="done" class="hidden card done"><div class="tick">✔</div><h2>ଧନ୍ୟବାଦ!</h2><p class="mute" id="doneMsg">ଆପଣଙ୍କ entry ସେଭ୍ ହୋଇଗଲା।</p>
+  <p class="mute">ଆଉ ଏକ ପଦବୀ / ଚରିତ୍ର ପାଇଁ entry କରିବାକୁ ଚାହାଁନ୍ତି କି?</p>
+  <button id="another" type="button">➕ ଆଉ ଏକ entry ଯୋଡ଼ନ୍ତୁ</button></div>
 </div>
 <script>
 const DATA = <?!= data ?>;
@@ -72,7 +72,7 @@ $('dept').onchange = () => {
   $('role-wrap').classList.toggle('hidden', !d || !d.roles);
   $('role-text-wrap').classList.toggle('hidden', !d || !!d.roles);
   if (d && d.roles) {
-    const r = $('role'); r.innerHTML = '<option value="">— चुनें —</option>';
+    const r = $('role'); r.innerHTML = '<option value="">— ବାଛନ୍ତୁ —</option>';
     d.roles.forEach((x) => r.add(new Option(x, x)));
     if (d.roles.length === 1) r.value = d.roles[0];   // only one choice: pre-select it
   }
@@ -107,24 +107,24 @@ $('f').onsubmit = async (e) => {
   const err = (m) => ($('err').textContent = m);
   err('');
   const body = { type, name: $('name').value, phone: $('phone').value };
-  if (!body.name.trim()) return err('नाम लिखें');
-  if (!/^\+?[0-9 \-]{8,16}$/.test(body.phone.trim())) return err('सही phone number डालें');
+  if (!body.name.trim()) return err('ନାମ ଲେଖନ୍ତୁ');
+  if (!/^\+?[0-9 \-]{8,16}$/.test(body.phone.trim())) return err('ସଠିକ୍ ଫୋନ୍ ନମ୍ବର ଦିଅନ୍ତୁ');
   if (type === 'crew') {
     body.department = $('dept').value;
-    if (!body.department) return err('Department चुनें');
+    if (!body.department) return err('ବିଭାଗ ବାଛନ୍ତୁ');
     body.designation = cfg[body.department].roles ? $('role').value : $('roletext').value;
-    if (!body.designation.trim()) return err('Designation चुनें / लिखें');
+    if (!body.designation.trim()) return err('ପଦବୀ ବାଛନ୍ତୁ / ଲେଖନ୍ତୁ');
   } else {
     Object.assign(body, { character: $('character').value, age: $('age').value, gender: $('gender').value, selfie });
-    if (!body.character.trim()) return err('Character का नाम लिखें');
-    if (!body.age) return err('Age डालें');
-    if (!body.gender) return err('Gender चुनें');
-    if (!selfie) return err('Selfie लें');
+    if (!body.character.trim()) return err('ଚରିତ୍ରର ନାମ ଲେଖନ୍ତୁ');
+    if (!body.age) return err('ବୟସ ଦିଅନ୍ତୁ');
+    if (!body.gender) return err('ଲିଙ୍ଗ ବାଛନ୍ତୁ');
+    if (!selfie) return err('Selfie ନିଅନ୍ତୁ');
   }
   $('submit').disabled = true;
   try {
     const j = await run('submitEntry', DATA.slug, body);
-    $('doneMsg').textContent = j.duplicate ? 'यह entry पहले से जमा है (दोबारा नहीं जोड़ी)।' : 'आपकी entry save हो गई।';
+    $('doneMsg').textContent = j.duplicate ? 'ଏହି entry ପୂର୍ବରୁ ଅଛି (ପୁଣି ଯୋଡ଼ାଗଲା ନାହିଁ)।' : 'ଆପଣଙ୍କ entry ସେଭ୍ ହୋଇଗଲା।';
     $('main').classList.add('hidden'); $('done').classList.remove('hidden');
   } catch (x) { err(x.message); $('submit').disabled = false; }
 };

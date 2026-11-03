@@ -5,7 +5,7 @@
 <body><div class="wrap">
 <div id="login" class="hidden card" style="max-width:380px;margin:12vh auto">
   <h1>🎬 Dashboard Login</h1>
-  <div id="warn" class="err hidden">पहले Apps Script में <code>Code.gs</code> खोलकर <code>ADMIN_PASSWORD</code> बदलें और दोबारा Deploy करें।</div>
+  <div id="warn" class="err hidden">ପ୍ରଥମେ Apps Script ରେ <code>Code.gs</code> ଖୋଲି <code>ADMIN_PASSWORD</code> ବଦଳାନ୍ତୁ ଏବଂ ପୁଣି Deploy କରନ୍ତୁ।</div>
   <form id="lf"><label>Password</label><input id="pw" type="password" autofocus>
   <div class="err" id="lerr"></div><button class="full">Login</button></form>
 </div>
@@ -46,7 +46,7 @@ async function go(view, slug) {
   S.view = view; if (slug) { S.slug = slug; S.tab = 'all'; S.q = ''; S.photos = {}; }
   $('app').classList.remove('hidden'); busy();
   try { view === 'home' ? await home() : await seriesView(); }
-  catch (e) { if (e.message !== 'login') $('app').innerHTML = '<p class="err">' + esc(e.message) + '</p><button class="ghost" id="rb">← वापस</button>'; if ($('rb')) $('rb').onclick = () => go('home'); }
+  catch (e) { if (e.message !== 'login') $('app').innerHTML = '<p class="err">' + esc(e.message) + '</p><button class="ghost" id="rb">← ଫେରନ୍ତୁ</button>'; if ($('rb')) $('rb').onclick = () => go('home'); }
 }
 
 async function home() {
@@ -54,10 +54,10 @@ async function home() {
   $('app').innerHTML = `
     <div class="top"><h1>🎬 My Web Series</h1><button class="ghost" id="lo">Logout</button></div>
     <div class="card" style="margin:14px 0"><form id="nf" class="bar" style="margin:0">
-      <input id="nn" placeholder="नई web series का नाम" maxlength="100">
+      <input id="nn" placeholder="ନୂଆ web series ର ନାମ" maxlength="100">
       <button id="nb">+ Add Series</button></form><div class="err" id="ne"></div>
-      <div class="mute" style="margin-top:8px">☁ सारा data आपके Google Drive के “Database of Series” folder में अपने-आप save होता है।</div></div>
-    ${list.length ? '' : '<p class="mute">अभी कोई series नहीं है। ऊपर से पहली series बनाएँ।</p>'}
+      <div class="mute" style="margin-top:8px">☁ ସମସ୍ତ data ଆପଣଙ୍କ Google Drive ର “Database of Series” folder ରେ ଆପେ ଆପେ save ହୁଏ।</div></div>
+    ${list.length ? '' : '<p class="mute">ଏଯାଏଁ କୌଣସି series ନାହିଁ। ଉପରୁ ପ୍ରଥମ series ତିଆରି କରନ୍ତୁ।</p>'}
     <div class="grid">${list.map((s) => `
       <div class="card series-card" data-slug="${esc(s.slug)}">
         <h3>${esc(s.name)}</h3><div class="mute">${esc(new Date(s.created).toLocaleDateString())}</div>
@@ -67,7 +67,7 @@ async function home() {
   document.querySelectorAll('.series-card').forEach((c) => (c.onclick = () => go('series', c.dataset.slug)));
   $('nf').onsubmit = async (e) => {
     e.preventDefault();
-    $('nb').disabled = true; $('ne').textContent = 'बन रही है… (Drive में folder और Sheet बन रही है)';
+    $('nb').disabled = true; $('ne').textContent = 'ତିଆରି ହେଉଛି… (Drive ରେ folder ଓ Sheet ତିଆରି ହେଉଛି)';
     try { const s = await api('createSeries', $('nn').value); go('series', s.slug); }
     catch (x) { $('ne').textContent = x.message; $('nb').disabled = false; }
   };
@@ -81,9 +81,9 @@ function render() {
   const shown = all.filter((m) => inTab(m, S.tab) && (!q || [m.name, m.phone, m.designation, m.character].some((v) => String(v || '').toLowerCase().includes(q))));
   const crew = shown.filter((m) => m.type === 'crew'), artists = shown.filter((m) => m.type === 'artist');
   $('app').innerHTML = `
-    <div class="top noprint"><button class="ghost" id="back">← सभी Series</button><button class="ghost" id="lo">Logout</button></div>
+    <div class="top noprint"><button class="ghost" id="back">← ସମସ୍ତ Series</button><button class="ghost" id="lo">Logout</button></div>
     <h1>${esc(s.name)}</h1>
-    <div class="card noprint"><div class="mute" style="margin-bottom:8px">इस series का form link (cast &amp; crew को भेजें):</div>
+    <div class="card noprint"><div class="mute" style="margin-bottom:8px">ଏହି series ର form link (cast ଓ crew ଙ୍କୁ ପଠାନ୍ତୁ):</div>
       <div class="link"><code>${esc(formLink(s))}</code>
       <button id="cp">Copy link</button>
       <a class="btn ghost" target="_blank" rel="noopener" href="${esc(formLink(s))}">Open</a>
@@ -94,8 +94,8 @@ function render() {
         <a target="_blank" rel="noopener" href="${esc(s.folderUrl)}">📁 Series folder</a>
         <a target="_blank" rel="noopener" href="${esc(s.sheetUrl)}">📊 Google Sheet</a></div></div>
     <div class="bar noprint"><div class="tabs">${tabs.map(([k, l]) => `<button data-t="${esc(k)}" class="${S.tab === k ? 'on' : ''}">${esc(l)} (${all.filter((m) => inTab(m, k)).length})</button>`).join('')}</div></div>
-    <div class="bar noprint"><input id="q" placeholder="🔍 नाम / phone / role / character खोजें" value="${esc(S.q)}"></div>
-    ${!shown.length ? '<p class="mute">अभी कोई entry नहीं है।</p>' : ''}
+    <div class="bar noprint"><input id="q" placeholder="🔍 ନାମ / phone / role / character ଖୋଜନ୍ତୁ" value="${esc(S.q)}"></div>
+    ${!shown.length ? '<p class="mute">ଏଯାଏଁ କୌଣସି entry ନାହିଁ।</p>' : ''}
     ${crew.length ? `<h2>Crew (${crew.length})</h2><div class="card tbl"><table><thead><tr><th>Name</th><th>Department</th><th>Designation</th><th>Phone</th><th class="noprint"></th></tr></thead><tbody>
       ${crew.map((m) => `<tr><td>${esc(m.name)}</td><td>${esc(m.departmentLabel)}</td><td>${esc(m.designation)}</td>
       <td><a href="tel:${esc(m.phone)}">${esc(m.phone)}</a></td><td class="noprint"><button class="danger" data-del="${esc(m.id)}">Delete</button></td></tr>`).join('')}
@@ -107,7 +107,7 @@ function render() {
         <div class="mute">${esc(m.gender)} · ${esc(m.age)} yrs</div>
         <a href="tel:${esc(m.phone)}">${esc(m.phone)}</a>
         <button class="danger noprint" data-del="${esc(m.id)}">Delete</button></div>`).join('')}</div>` : ''}
-    <div class="noprint" style="margin-top:50px"><button class="danger" id="delS">इस Series को dashboard से हटाएँ</button></div>`;
+    <div class="noprint" style="margin-top:50px"><button class="danger" id="delS">ଏହି Series କୁ dashboard ରୁ ହଟାନ୍ତୁ</button></div>`;
 
   $('back').onclick = () => go('home');
   $('lo').onclick = logout;
@@ -117,12 +117,12 @@ function render() {
   document.querySelectorAll('[data-t]').forEach((b) => (b.onclick = () => { S.tab = b.dataset.t; render(); }));
   $('q').oninput = (e) => { S.q = e.target.value; const p = e.target.selectionStart; render(); $('q').focus(); $('q').setSelectionRange(p, p); };
   document.querySelectorAll('[data-del]').forEach((b) => (b.onclick = async () => {
-    if (!confirm('यह entry delete करें? (photo Drive के Trash में जाएगी)')) return;
+    if (!confirm('ଏହି entry delete କରିବେ? (photo Drive ର Trash କୁ ଯିବ)')) return;
     try { await api('deleteMember', S.slug, b.dataset.del); await loadSeries(); } catch (x) { alert(x.message); }
   }));
   document.querySelectorAll('[data-zoom]').forEach((i) => (i.onclick = () => { $('lbimg').src = i.src; $('lb').classList.remove('hidden'); }));
   $('delS').onclick = async () => {
-    if (!confirm(`"${s.name}" dashboard से हट जाएगी (${all.length} entries)। Drive में folder और Sheet वैसे ही रहेंगे। पक्का?`)) return;
+    if (!confirm(`"${s.name}" dashboard ରୁ ହଟିଯିବ (${all.length} entries)। Drive ରେ folder ଓ Sheet ସେମିତି ରହିବ। ନିଶ୍ଚିତ କି?`)) return;
     try { await api('deleteSeries', S.slug); go('home'); } catch (x) { alert(x.message); }
   };
   loadPhotos();

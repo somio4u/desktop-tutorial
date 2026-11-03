@@ -44,7 +44,7 @@ function json_(o) { return JSON.stringify(o).replace(/</g, '\\u003c').replace(/\
 
 // Run once from the editor: asks for permissions and creates the root Drive folder.
 function setup() {
-  if (ADMIN_PASSWORD === 'CHANGE-ME') throw new Error('Pehle ADMIN_PASSWORD badlein (line 6).');
+  if (ADMIN_PASSWORD === 'CHANGE-ME') throw new Error('Change ADMIN_PASSWORD first (line 6).');
   const f = root_();
   Logger.log('Ready. Drive folder: ' + f.getUrl());
   return f.getUrl();
@@ -71,7 +71,7 @@ function seriesMeta_(slug) {
 function saveMeta_(s) { PropertiesService.getScriptProperties().setProperty('S_' + s.slug, JSON.stringify(s)); }
 function sheet_(s) {
   try { return SpreadsheetApp.openById(s.sheetId).getSheets()[0]; }
-  catch (e) { throw new Error('Is series ki Google Sheet nahi mili (Drive se delete ho gayi?)'); }
+  catch (e) { throw new Error('ଏହି series ର Google Sheet ମିଳିଲା ନାହିଁ (Drive ରୁ delete ହୋଇଗଲା କି?)'); }
 }
 function members_(sheet) {
   const last = sheet.getLastRow();
@@ -101,38 +101,38 @@ function withLock_(fn) {
 // ---------------- public: form submission ----------------
 function submitEntry(slug, body) {
   const s = seriesMeta_(slug);
-  if (!s) throw new Error('Series nahi mili');
+  if (!s) throw new Error('Series ମିଳିଲା ନାହିଁ');
   body = body || {};
   const type = body.type === 'artist' ? 'artist' : 'crew';
   const name = clean_(body.name), phone = clean_(body.phone, 20);
-  if (!name) throw new Error('नाम ज़रूरी है');
-  if (!phoneOk_(phone)) throw new Error('सही phone number डालें');
+  if (!name) throw new Error('ନାମ ଆବଶ୍ୟକ');
+  if (!phoneOk_(phone)) throw new Error('ସଠିକ୍ ଫୋନ୍ ନମ୍ବର ଦିଅନ୍ତୁ');
   let dept = '', role = '', character = '', age = '', gender = '', photoBytes = null;
   if (type === 'crew') {
     const d = DEPARTMENTS[body.department];
-    if (!d) throw new Error('Department चुनें');
+    if (!d) throw new Error('ବିଭାଗ ବାଛନ୍ତୁ');
     dept = body.department;
-    if (d.roles) { if (d.roles.indexOf(body.designation) < 0) throw new Error('Designation चुनें'); role = body.designation; }
-    else { role = clean_(body.designation); if (!role) throw new Error('Designation लिखें'); }
+    if (d.roles) { if (d.roles.indexOf(body.designation) < 0) throw new Error('ପଦବୀ ବାଛନ୍ତୁ'); role = body.designation; }
+    else { role = clean_(body.designation); if (!role) throw new Error('ପଦବୀ ଲେଖନ୍ତୁ'); }
   } else {
     character = clean_(body.character);
-    if (!character) throw new Error('Character का नाम लिखें');
+    if (!character) throw new Error('ଚରିତ୍ରର ନାମ ଲେଖନ୍ତୁ');
     const a = parseInt(body.age, 10);
-    if (!(a > 0 && a < 120)) throw new Error('सही Age डालें');
+    if (!(a > 0 && a < 120)) throw new Error('ସଠିକ୍ ବୟସ ଦିଅନ୍ତୁ');
     age = String(a);
-    if (['Male', 'Female', 'Other'].indexOf(body.gender) < 0) throw new Error('Gender चुनें');
+    if (['Male', 'Female', 'Other'].indexOf(body.gender) < 0) throw new Error('ଲିଙ୍ଗ ବାଛନ୍ତୁ');
     gender = body.gender;
     role = 'Artist';
     const b64 = String(body.selfie || '').replace(/^data:image\/jpeg;base64,/, '');
-    if (!b64) throw new Error('Selfie ज़रूरी है');
-    if (b64.length > 4 * 1024 * 1024) throw new Error('Selfie बहुत बड़ी है');
-    try { photoBytes = Utilities.base64Decode(b64); } catch (e) { throw new Error('Selfie सही नहीं है'); }
-    if (!(photoBytes.length > 4 && photoBytes[0] === -1 && photoBytes[1] === -40)) throw new Error('Selfie सही नहीं है');
+    if (!b64) throw new Error('Selfie ଆବଶ୍ୟକ');
+    if (b64.length > 4 * 1024 * 1024) throw new Error('Selfie ବହୁତ ବଡ଼');
+    try { photoBytes = Utilities.base64Decode(b64); } catch (e) { throw new Error('Selfie ଠିକ୍ ନୁହେଁ'); }
+    if (!(photoBytes.length > 4 && photoBytes[0] === -1 && photoBytes[1] === -40)) throw new Error('Selfie ଠିକ୍ ନୁହେଁ');
   }
   return withLock_(() => {
     const sh = sheet_(s);
     const list = members_(sh);
-    if (list.length >= MAX_ROWS) throw new Error('Is series me entries ki limit poori ho gayi');
+    if (list.length >= MAX_ROWS) throw new Error('ଏହି series ରେ entries ର ସୀମା ପୂରଣ ହୋଇଗଲା');
     // One person may submit several entries (other role, other character, crew + artist).
     // Only an exact repeat (same person + same role/character) is ignored, e.g. a double tap.
     const digits = (p) => String(p).replace(/[^0-9+]/g, '');
@@ -158,9 +158,9 @@ function submitEntry(slug, body) {
 function login(pw) {
   const cache = CacheService.getScriptCache();
   const fails = Number(cache.get('fails') || 0);
-  if (fails >= 10) throw new Error('बहुत कोशिशें हुईं, 15 मिनट बाद आज़माएँ');
-  if (ADMIN_PASSWORD === 'CHANGE-ME') throw new Error('पहले Code.gs में ADMIN_PASSWORD बदलें');
-  if (String(pw) !== ADMIN_PASSWORD) { cache.put('fails', String(fails + 1), 900); throw new Error('गलत password'); }
+  if (fails >= 10) throw new Error('ବହୁତ ଥର ଚେଷ୍ଟା ହେଲା, ୧୫ ମିନିଟ୍ ପରେ ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ');
+  if (ADMIN_PASSWORD === 'CHANGE-ME') throw new Error('ପ୍ରଥମେ Code.gs ରେ ADMIN_PASSWORD ବଦଳାନ୍ତୁ');
+  if (String(pw) !== ADMIN_PASSWORD) { cache.put('fails', String(fails + 1), 900); throw new Error('ଭୁଲ password'); }
   cache.remove('fails');
   const tok = Utilities.getUuid() + Utilities.getUuid();
   cache.put('adm_' + tok, '1', 21600);
@@ -181,7 +181,7 @@ function listSeries(token) {
 function createSeries(token, name) {
   auth_(token);
   name = clean_(name);
-  if (!name) throw new Error('Series का नाम लिखें');
+  if (!name) throw new Error('Series ର ନାମ ଲେଖନ୍ତୁ');
   return withLock_(() => {
     const folder = root_().createFolder(name);
     const photos = folder.createFolder('Artist Photos');
@@ -200,7 +200,7 @@ function createSeries(token, name) {
 function getSeries(token, slug) {
   auth_(token);
   const s = seriesMeta_(slug);
-  if (!s) throw new Error('Series nahi mili');
+  if (!s) throw new Error('Series ମିଳିଲା ନାହିଁ');
   const list = members_(sheet_(s));
   return { series: s, members: list.map(publicMember_) };
 }
@@ -208,7 +208,7 @@ function getSeries(token, slug) {
 function getPhotos(token, slug, ids) {
   auth_(token);
   const s = seriesMeta_(slug);
-  if (!s) throw new Error('Series nahi mili');
+  if (!s) throw new Error('Series ମିଳିଲା ନାହିଁ');
   const want = {};
   (ids || []).slice(0, 8).forEach((i) => (want[String(i)] = 1));
   const out = {};
@@ -222,11 +222,11 @@ function getPhotos(token, slug, ids) {
 function deleteMember(token, slug, id) {
   auth_(token);
   const s = seriesMeta_(slug);
-  if (!s) throw new Error('Series nahi mili');
+  if (!s) throw new Error('Series ମିଳିଲା ନାହିଁ');
   return withLock_(() => {
     const sh = sheet_(s);
     const m = members_(sh).filter((x) => x.id === String(id))[0];
-    if (!m) throw new Error('Entry nahi mili');
+    if (!m) throw new Error('Entry ମିଳିଲା ନାହିଁ');
     if (m.fileId) { try { DriveApp.getFileById(m.fileId).setTrashed(true); } catch (e) { } }
     sh.deleteRow(m.row);
     updateCounts_(s, members_(sh));
@@ -236,16 +236,16 @@ function deleteMember(token, slug, id) {
 // Removes the series from the dashboard. The Drive folder/Sheet are kept (delete them in Drive if you want).
 function deleteSeries(token, slug) {
   auth_(token);
-  if (!seriesMeta_(slug)) throw new Error('Series nahi mili');
+  if (!seriesMeta_(slug)) throw new Error('Series ମିଳିଲା ନାହିଁ');
   PropertiesService.getScriptProperties().deleteProperty('S_' + slug);
   return true;
 }
 function exportXlsx(token, slug) {
   auth_(token);
   const s = seriesMeta_(slug);
-  if (!s) throw new Error('Series nahi mili');
+  if (!s) throw new Error('Series ମିଳିଲା ନାହିଁ');
   const res = UrlFetchApp.fetch('https://docs.google.com/spreadsheets/d/' + s.sheetId + '/export?format=xlsx', {
     headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }, muteHttpExceptions: true });
-  if (res.getResponseCode() !== 200) throw new Error('Excel export fail hua — Google Sheet me File > Download > Excel use karein');
+  if (res.getResponseCode() !== 200) throw new Error('Excel export ବିଫଳ ହେଲା — Google Sheet ରେ File > Download > Excel ବ୍ୟବହାର କରନ୍ତୁ');
   return { name: s.slug + '.xlsx', base64: Utilities.base64Encode(res.getContent()) };
 }
