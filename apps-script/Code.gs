@@ -58,7 +58,7 @@ const slugify_ = (s) => clean_(s, 40).toLowerCase().replace(/[^a-z0-9]+/g, '-').
 function root_() {
   const props = PropertiesService.getScriptProperties();
   const id = props.getProperty('ROOT_ID');
-  if (id) { try { const f = DriveApp.getFolderById(id); if (!f.isTrashed()) return f; } catch (e) { /* recreate */ } }
+  if (id) { try { const f = DriveApp.getFolderById(id); if (!f.isTrashed()) return f; } catch (e) { } }
   const f = DriveApp.createFolder(ROOT_NAME);
   props.setProperty('ROOT_ID', f.getId());
   return f;
@@ -214,7 +214,7 @@ function getPhotos(token, slug, ids) {
   const out = {};
   members_(sheet_(s)).forEach((m) => {
     if (want[m.id] && m.fileId) {
-      try { out[m.id] = 'data:image/jpeg;base64,' + Utilities.base64Encode(DriveApp.getFileById(m.fileId).getBlob().getBytes()); } catch (e) { /* missing file */ }
+      try { out[m.id] = 'data:image/jpeg;base64,' + Utilities.base64Encode(DriveApp.getFileById(m.fileId).getBlob().getBytes()); } catch (e) { }
     }
   });
   return out;
@@ -227,7 +227,7 @@ function deleteMember(token, slug, id) {
     const sh = sheet_(s);
     const m = members_(sh).filter((x) => x.id === String(id))[0];
     if (!m) throw new Error('Entry nahi mili');
-    if (m.fileId) { try { DriveApp.getFileById(m.fileId).setTrashed(true); } catch (e) { /* ignore */ } }
+    if (m.fileId) { try { DriveApp.getFileById(m.fileId).setTrashed(true); } catch (e) { } }
     sh.deleteRow(m.row);
     updateCounts_(s, members_(sh));
     return true;
