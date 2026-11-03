@@ -44,7 +44,7 @@ function json_(o) { return JSON.stringify(o).replace(/</g, '\\u003c').replace(/\
 
 // Run once from the editor: asks for permissions and creates the root Drive folder.
 function setup() {
-  if (ADMIN_PASSWORD === 'CHANGE-ME') throw new Error('Pehle ADMIN_PASSWORD badlein (line 7).');
+  if (ADMIN_PASSWORD === 'CHANGE-ME') throw new Error('Pehle ADMIN_PASSWORD badlein (line 6).');
   const f = root_();
   Logger.log('Ready. Drive folder: ' + f.getUrl());
   return f.getUrl();
