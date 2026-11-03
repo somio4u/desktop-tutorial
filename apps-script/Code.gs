@@ -1,11 +1,8 @@
-/**
- * Series Cast & Crew platform — Google Apps Script version.
- * Data lives in YOUR Google Drive:
- *   Database of Series / <Series> / Artist Photos + "<Series> – Cast & Crew" (Google Sheet)
- *
- * SETUP: 1) change ADMIN_PASSWORD below  2) run setup() once  3) Deploy > New deployment > Web app
- *        (Execute as: Me, Who has access: Anyone)
- */
+// Series Cast & Crew platform - Google Apps Script version.
+// Data lives in YOUR Google Drive:
+//   Database of Series / <Series> / Artist Photos + "<Series> - Cast & Crew" (Google Sheet)
+// SETUP: 1) change ADMIN_PASSWORD below  2) run setup() once  3) Deploy > New deployment > Web app
+//        (Execute as: Me, Who has access: Anyone)
 const ADMIN_PASSWORD = 'CHANGE-ME';   // <-- yahan apna password likhein (quotes ke andar)
 
 const ROOT_NAME = 'Database of Series';
@@ -45,9 +42,9 @@ function doGet(e) {
 function include(name) { return HtmlService.createHtmlOutputFromFile(name).getContent(); }
 function json_(o) { return JSON.stringify(o).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029'); }
 
-/** Run once from the editor: asks for permissions and creates the root Drive folder. */
+// Run once from the editor: asks for permissions and creates the root Drive folder.
 function setup() {
-  if (ADMIN_PASSWORD === 'CHANGE-ME') throw new Error('Pehle ADMIN_PASSWORD badlein (line 9).');
+  if (ADMIN_PASSWORD === 'CHANGE-ME') throw new Error('Pehle ADMIN_PASSWORD badlein (line 7).');
   const f = root_();
   Logger.log('Ready. Drive folder: ' + f.getUrl());
   return f.getUrl();
@@ -207,7 +204,7 @@ function getSeries(token, slug) {
   const list = members_(sheet_(s));
   return { series: s, members: list.map(publicMember_) };
 }
-/** Returns {memberId: dataUrl} for up to ~6 artists at a time (keeps responses small). */
+// Returns {memberId: dataUrl} for up to ~6 artists at a time (keeps responses small).
 function getPhotos(token, slug, ids) {
   auth_(token);
   const s = seriesMeta_(slug);
@@ -236,7 +233,7 @@ function deleteMember(token, slug, id) {
     return true;
   });
 }
-/** Removes the series from the dashboard. The Drive folder/Sheet are kept (delete them in Drive if you want). */
+// Removes the series from the dashboard. The Drive folder/Sheet are kept (delete them in Drive if you want).
 function deleteSeries(token, slug) {
   auth_(token);
   if (!seriesMeta_(slug)) throw new Error('Series nahi mili');
