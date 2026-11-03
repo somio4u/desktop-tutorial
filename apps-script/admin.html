@@ -75,7 +75,7 @@ async function home() {
 
 function render() {
   const { series: s, members: all } = S.data;
-  const tabs = [['all', 'All'], ...Object.keys(cfg).map((k) => [k, cfg[k].label]), ['artist', 'Artists']];
+  const tabs = [['all', 'All'], ...Object.keys(cfg).map((k) => [k, cfg[k].label]), ['artist', 'Casting (Artists)']];
   const inTab = (m, k) => k === 'all' || (k === 'artist' ? m.type === 'artist' : m.department === k);
   const q = S.q.toLowerCase();
   const shown = all.filter((m) => inTab(m, S.tab) && (!q || [m.name, m.phone, m.designation, m.character].some((v) => String(v || '').toLowerCase().includes(q))));

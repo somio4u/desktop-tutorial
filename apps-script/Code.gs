@@ -10,10 +10,19 @@ const ADMIN_PASSWORD = 'CHANGE-ME';   // <-- yahan apna password likhein (quotes
 
 const ROOT_NAME = 'Database of Series';
 const DEPARTMENTS = {
-  direction: { label: 'Direction', roles: ['Assistant Director', 'Associate Director'] },
-  cinematography: { label: 'Cinematography', roles: ['Cameraman', 'Assistant Cameraman', 'Gimbal Operator', 'Camera Attendant', 'Light Boys'] },
-  production: { label: 'Production', roles: null }, // free-text designation
-  costume: { label: 'Costume and Makeup', roles: ['Costume Designer', 'Costume Assistant', 'Costume Man', 'Hairstylist', 'Makeup', 'Assistant Makeup'] },
+  direction: { label: "Direction", roles: ["Director", "Associate Director", "Assistant Director"] },
+  production: { label: "Production", roles: ["Production Manager", "Spot Boys"] },
+  cinematography: { label: "Cinematography (Camera Team)", roles: ["DOP (Director of Photography)", "Cameraman", "Assistant Cameraman", "Camera Attendant", "Gimbal Operator", "Light Boys"] },
+  art: { label: "Art Direction", roles: ["Art Director", "Assistant Art Director"] },
+  costume: { label: "Costume", roles: ["Costume Designer", "Assistant Costume Man"] },
+  makeup: { label: "Makeup and Hair", roles: ["Makeup Man", "Assistant Makeup Man", "Hair Dresser"] },
+  food: { label: "Food and Catering", roles: ["Hotel Vendor", "Food Vendor"] },
+  travels: { label: "Travels", roles: ["Travel Agency", "Driver"] },
+  producer: { label: "Producer", roles: ["Producer", "Production House"] },
+  editing: { label: "Editing", roles: ["Editor", "Assistant Editor"] },
+  sound: { label: "Sound", roles: ["On-location Sound Recordist", "BGM", "SFX", "Mixing Engineer"] },
+  di: { label: "DI", roles: ["DI Colorist"] },
+  vfx: { label: "VFX", roles: ["VFX Artist"] },
 };
 const HEAD = ['ID', 'Type', 'Name', 'Department', 'Designation', 'Character', 'Age', 'Gender', 'Phone', 'Photo link', 'PhotoFileId', 'Added', 'Updated'];
 const C = { ID: 0, TYPE: 1, NAME: 2, DEPT: 3, ROLE: 4, CHAR: 5, AGE: 6, GENDER: 7, PHONE: 8, LINK: 9, FILE: 10, ADDED: 11, UPDATED: 12 };

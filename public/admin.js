@@ -82,7 +82,7 @@ async function seriesView(sid) {
   const s = await api('/series/' + sid);
   const all = s.members;
   const label = (k) => cfg[k] ? cfg[k].label : k;
-  const tabs = [['all', 'All'], ...Object.entries(cfg).map(([k, d]) => [k, d.label]), ['artist', 'Artists']];
+  const tabs = [['all', 'All'], ...Object.entries(cfg).map(([k, d]) => [k, d.label]), ['artist', 'Casting (Artists)']];
   const count = (k) => all.filter((m) => k === 'all' || (k === 'artist' ? m.type === 'artist' : m.department === k)).length;
   const q = state.q.toLowerCase();
   const shown = all.filter((m) => (state.tab === 'all' || (state.tab === 'artist' ? m.type === 'artist' : m.department === state.tab)) &&

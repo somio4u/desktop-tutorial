@@ -32,6 +32,7 @@ $('dept').onchange = () => {
   if (d && d.roles) {
     const r = $('role'); r.innerHTML = '<option value="">— चुनें —</option>';
     d.roles.forEach((x) => r.add(new Option(x, x)));
+    if (d.roles.length === 1) r.value = d.roles[0];   // only one choice: pre-select it
   }
 };
 

@@ -10,7 +10,7 @@
   <p class="mute">अपनी details भरें। (Fill in your details)</p>
   <div class="card">
     <label>आप कौन हैं? (Who are you?)</label>
-    <div class="seg"><button type="button" id="b-crew" class="on">Crew</button><button type="button" id="b-artist">Artist</button></div>
+    <div class="seg"><button type="button" id="b-crew" class="on">Crew</button><button type="button" id="b-artist">Artist / Casting</button></div>
     <form id="f" novalidate>
       <label for="name">नाम (Name)</label><input id="name" autocomplete="name" maxlength="100">
       <label for="phone">Phone number</label><input id="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20">
@@ -74,6 +74,7 @@ $('dept').onchange = () => {
   if (d && d.roles) {
     const r = $('role'); r.innerHTML = '<option value="">— चुनें —</option>';
     d.roles.forEach((x) => r.add(new Option(x, x)));
+    if (d.roles.length === 1) r.value = d.roles[0];   // only one choice: pre-select it
   }
 };
 
