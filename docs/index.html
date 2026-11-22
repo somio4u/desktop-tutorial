@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>No Due Certificate</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Caveat:wght@600&display=swap">
+<style>
+
+/* Layout: one narrow column. Admin = settings, create project, project list. Signer = form above a live certificate preview. */
+:root {
+  --bg: #f3f5f7;
+  --surface: #ffffff;
+  --ink: #12202e;
+  --muted: #5d6b79;
+  --line: #d9e0e6;
+  --accent: #0b6b63;
+  --accent-ink: #ffffff;
+  --accent-soft: #e0f1ee;
+  --danger: #b3261e;
+  --paper: #fffef9;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sign: "Caveat", "Segoe Script", "Bradley Hand", cursive;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e151c; --surface: #17212b; --ink: #e8eef3; --muted: #93a2b0; --line: #2b3946;
+    --accent: #3fb8ac; --accent-ink: #06201d; --accent-soft: #14312e; --danger: #f2877f; --paper: #1b2631;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e151c; --surface: #17212b; --ink: #e8eef3; --muted: #93a2b0; --line: #2b3946;
+  --accent: #3fb8ac; --accent-ink: #06201d; --accent-soft: #14312e; --danger: #f2877f; --paper: #1b2631;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font-body); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px; }
+main { max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+h1 { font-size: 22px; line-height: 1.25; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h2 { font-size: 16px; margin: 0 0 12px; }
+.eyebrow { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; min-width: 0; }
+.grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+label { display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 500; color: var(--muted); min-width: 0; }
+input, select { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; width: 100%; min-width: 0; }
+input:focus-visible, select:focus-visible, .btn:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn { font: inherit; font-weight: 600; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 6px; padding: 10px 16px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+.btn.small { padding: 6px 10px; font-size: 13px; }
+.btn.danger { background: transparent; color: var(--danger); border: 1px solid var(--line); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.hint { color: var(--muted); font-size: 13px; margin: 0; }
+.error { color: var(--danger); font-size: 13px; margin: 0; }
+.ok { color: var(--accent); font-size: 14px; font-weight: 500; margin: 0; }
+.proj { border-top: 1px solid var(--line); padding-top: 14px; margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.proj:first-child { border-top: 0; margin-top: 0; padding-top: 0; }
+.proj-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: baseline; }
+.proj-name { font-weight: 600; font-size: 16px; }
+.pill { font-size: 12px; background: var(--accent-soft); color: var(--accent); padding: 2px 9px; border-radius: 99px; font-weight: 600; }
+.linkbox { display: flex; gap: 8px; }
+.linkbox input { font-size: 13px; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+td.num, th.num { font-variant-numeric: tabular-nums; }
+.paper { background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 26px 24px; font-size: 15px; line-height: 1.65; }
+.paper p { margin: 0 0 14px; }
+.paper .to { margin-bottom: 14px; }
+.paper .sub { font-weight: 700; }
+.paper .fill { border-bottom: 1px dotted var(--muted); font-weight: 600; padding: 0 2px; }
+.paper .fill.empty { color: var(--muted); font-weight: 400; }
+.sigline { display: flex; flex-direction: column; gap: 6px; margin-top: 22px; }
+.sigline .sig { font-family: var(--font-sign); font-size: 30px; line-height: 1.1; min-height: 34px; display: inline-block; }
+.sigline .k { font-weight: 600; }
+.center-note { text-align: center; padding: 40px 0; color: var(--muted); }
+.sendbar { display: flex; flex-direction: column; gap: 10px; }
+.recips { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main id="app"><p class="center-note">Loading…</p></main>
+<script>
+(function () {
+  "use strict";
+  var ROLES = ["Actor", "Director", "Music Director", "Production Manager", "Producer"];
+  var MAX_FIXED = 10;
+  var app = document.getElementById("app");
+
+  function h(tag, attrs, kids) {
+    var el = document.createElement(tag);
+    if (attrs) for (var k in attrs) {
+      if (k === "class") el.className = attrs[k];
+      else if (k === "text") el.textContent = attrs[k];
+      else if (k.slice(0, 2) === "on") el.addEventListener(k.slice(2), attrs[k]);
+      else el.setAttribute(k, attrs[k]);
+    }
+    (kids || []).forEach(function (c) { if (c) el.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
+    return el;
+  }
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function todayISO() { var d = new Date(); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function fmtDate(iso) { var p = (iso || "").split("-"); return p.length === 3 ? p[2] + " / " + p[1] + " / " + p[0] : ""; }
+  function validEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
+  function fieldBox(label, input) { return h("label", null, [label, input]); }
+  function baseUrl() { return location.href.split("#")[0]; }
+  function load(key, fallback) { try { var v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; } catch (e) { return fallback; } }
+  function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); return true; } catch (e) { return false; } }
+  function copy(text, btn) {
+    var done = function () { var t = btn.textContent; btn.textContent = "Copied"; setTimeout(function () { btn.textContent = t; }, 1500); };
+    var fallback = function () {
+      var ta = h("textarea", { style: "position:fixed;opacity:0" }); ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); done(); } catch (e) {} ta.remove();
+    };
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+  }
+
+  /* Project details travel inside the link (letters and digits only), so artists need no login. */
+  var B32 = "abcdefghijklmnopqrstuvwxyz234567";
+  function enc(obj) {
+    var b = new TextEncoder().encode(JSON.stringify(obj)), bits = 0, v = 0, o = "";
+    for (var i = 0; i < b.length; i++) { v = (v << 8) | b[i]; bits += 8; while (bits >= 5) { o += B32[(v >>> (bits - 5)) & 31]; bits -= 5; } v &= (1 << bits) - 1; }
+    if (bits > 0) o += B32[(v << (5 - bits)) & 31];
+    return o;
+  }
+  function dec(s) {
+    var v = 0, bits = 0, out = [];
+    for (var i = 0; i < s.length; i++) { var k = B32.indexOf(s[i].toLowerCase()); if (k < 0) return null; v = (v << 5) | k; bits += 5; if (bits >= 8) { out.push((v >>> (bits - 8)) & 255); bits -= 8; } v &= (1 << bits) - 1; }
+    try { return JSON.parse(new TextDecoder().decode(new Uint8Array(out))); } catch (e) { return null; }
+  }
+
+  /* ---------- Admin (projects and fixed emails are kept in this browser) ---------- */
+  function renderAdmin() {
+    app.textContent = "";
+    var projects = load("nd_projects", []);
+    var fixedSaved = load("nd_fixed", []);
+
+    var emailsBox = h("div", { style: "display:flex;flex-direction:column;gap:8px" });
+    var addBtn = h("button", { class: "btn small ghost", type: "button", text: "Add another email", onclick: function () { addRow(""); } });
+    function syncAdd() { addBtn.disabled = emailsBox.children.length >= MAX_FIXED; }
+    function addRow(val) {
+      if (emailsBox.children.length >= MAX_FIXED) return;
+      var inp = h("input", { type: "email", placeholder: "name@example.com", "aria-label": "Fixed recipient email" });
+      inp.value = val || "";
+      var row = h("div", { class: "linkbox" }, [inp, h("button", { class: "btn small danger", type: "button", text: "Remove", onclick: function () { row.remove(); syncAdd(); } })]);
+      emailsBox.appendChild(row); syncAdd();
+    }
+    function getEmails() {
+      return Array.prototype.map.call(emailsBox.querySelectorAll("input"), function (i) { return i.value.trim(); }).filter(Boolean);
+    }
+    (fixedSaved.length ? fixedSaved : ["", ""]).forEach(addRow);
+    var setMsg = h("p", { class: "hint", text: "These addresses receive every certificate, for every project. Add up to 10. Each project link carries the emails saved at the moment you copy it, so copy the link again after you change them." });
+    var saveSettings = h("button", { class: "btn small", type: "button", text: "Save emails", onclick: function () {
+      var l = getEmails();
+      for (var i = 0; i < l.length; i++) if (!validEmail(l[i])) { setMsg.className = "error"; setMsg.textContent = "Check the email address: " + l[i]; return; }
+      fixedSaved = l; save("nd_fixed", l); drawList();
+      setMsg.className = "ok"; setMsg.textContent = "Saved. Copy your project links again so they carry these emails.";
+    } });
+
+    var pName = h("input", { id: "pname", type: "text", placeholder: "Mahakali" });
+    var pType = h("select", { id: "ptype" }, [h("option", { value: "web series", text: "Web series" }), h("option", { value: "film", text: "Film" })]);
+    var pMail = h("input", { id: "pmail", type: "email", placeholder: "producer@example.com" });
+    var pMsg = h("p", { class: "hint", text: "The producer email is added to the To list for this project only." });
+    var create = h("button", { class: "btn", type: "button", text: "Create certificate link", onclick: function () {
+      var name = pName.value.trim(), mail = pMail.value.trim();
+      if (!name) { pMsg.className = "error"; pMsg.textContent = "Enter the project name."; return; }
+      if (mail && !validEmail(mail)) { pMsg.className = "error"; pMsg.textContent = "Check the producer email address."; return; }
+      projects.unshift({ id: Date.now().toString(36), name: name, type: pType.value, producerEmail: mail });
+      save("nd_projects", projects);
+      pName.value = ""; pMail.value = "";
+      pMsg.className = "ok"; pMsg.textContent = "Created. Copy the link below and send it.";
+      drawList();
+    } });
+
+    var list = h("div");
+    app.appendChild(h("div", null, [h("div", { class: "eyebrow", text: "Admin" }), h("h1", { text: "No Due Certificates" })]));
+    app.appendChild(h("section", { class: "card" }, [
+      h("h2", { text: "New project" }),
+      h("div", { class: "grid" }, [fieldBox("Project name", pName), fieldBox("Type", pType), fieldBox("Producer email", pMail)]),
+      h("div", { class: "row", style: "margin-top:12px" }, [create]), pMsg
+    ]));
+    app.appendChild(h("section", { class: "card" }, [h("h2", { text: "Projects" }), list]));
+    app.appendChild(h("section", { class: "card" }, [
+      h("h2", { text: "Fixed recipients" }),
+      emailsBox,
+      h("div", { class: "row", style: "margin-top:12px" }, [addBtn, saveSettings]), setMsg
+    ]));
+
+    function drawList() {
+      list.textContent = "";
+      if (!projects.length) { list.appendChild(h("p", { class: "hint", text: "No projects yet. Create one above, for example Mahakali." })); return; }
+      projects.forEach(function (d) {
+        var link = baseUrl() + "#c-" + enc({ i: d.id, n: d.name, t: d.type, p: d.producerEmail || "", f: fixedSaved });
+        var linkInput = h("input", { type: "text", readonly: "readonly", value: link, "aria-label": "Link for " + d.name });
+        linkInput.addEventListener("focus", function () { linkInput.select(); });
+        var copyBtn = h("button", { class: "btn small", type: "button", text: "Copy link", onclick: function () { copy(link, copyBtn); } });
+        var openBtn = h("a", { class: "btn small ghost", href: link, target: "_blank", rel: "noopener", text: "Preview" });
+        var delConfirm = false;
+        var delBtn = h("button", { class: "btn small danger", type: "button", text: "Delete", onclick: function () {
+          if (!delConfirm) { delConfirm = true; delBtn.textContent = "Tap again to delete"; setTimeout(function () { delConfirm = false; delBtn.textContent = "Delete"; }, 3000); return; }
+          projects = projects.filter(function (x) { return x.id !== d.id; }); save("nd_projects", projects); drawList();
+        } });
+        list.appendChild(h("div", { class: "proj" }, [
+          h("div", { class: "proj-head" }, [h("span", { class: "proj-name", text: d.name })]),
+          h("p", { class: "hint", text: (d.type === "film" ? "Film" : "Web series") + (d.producerEmail ? " · producer: " + d.producerEmail : " · no producer email") }),
+          h("div", { class: "linkbox" }, [linkInput, copyBtn]),
+          h("div", { class: "row" }, [openBtn, delBtn])
+        ]));
+      });
+    }
+    drawList();
+  }
+
+  /* ---------- Artist / technician form ---------- */
+  function renderSigner(payload) {
+    app.textContent = "";
+    var fixed = (payload.f || []).filter(Boolean);
+    var project = { name: payload.n, type: payload.t, producerEmail: payload.p };
+    var name = h("input", { id: "sname", type: "text", placeholder: "Your full name", autocomplete: "name" });
+    var role = h("select", { id: "srole" }, ROLES.map(function (r) { return h("option", { value: r, text: r }); }).concat([h("option", { value: "__other", text: "Other (type below)" })]));
+    var other = h("input", { id: "sother", type: "text", placeholder: "e.g. Spot boy, Light boy, Editor" });
+    var otherBox = fieldBox("Your role", other); otherBox.hidden = true;
+    var date = h("input", { id: "sdate", type: "date", value: todayISO() });
+    var err = h("p", { class: "error" });
+    var okMsg = h("p", { class: "ok" });
+    var pv = { project: h("span"), role: h("span"), sig: h("span", { class: "sig" }), name: h("span"), date: h("span") };
+    var typeWord = project.type === "film" ? "film" : "web series";
+    function fillSpan(span, val, placeholder) { span.className = "fill" + (val ? "" : " empty"); span.textContent = val || placeholder; }
+    function roleText() {
+      if (role.value === "__other") return other.value.trim();
+      return role.value === "Actor" ? "Actor / Actress" : role.value;
+    }
+    function emailBody() {
+      return ["To", "The Producer,", "Tarang+ Originals", "Odisha Television Ltd., Bhubaneswar", "", "Sub: No Due Certificate", "", "Sir,",
+        "I have received all my dues from the production house towards my remuneration for the " + typeWord + " " + project.name + ". I have participated in this project in the capacity of " + roleText() + ". I confirm that I have no further financial or material claims pending regarding this production.",
+        "", "Signature: " + name.value.trim(), "Name: " + name.value.trim(), "Date: " + fmtDate(date.value)].join("\n");
+    }
+    var send = h("a", { class: "btn", target: "_blank", rel: "noopener", text: "Send Now (opens Gmail)" });
+    var recips = h("p", { class: "recips" });
+    var copyBody = h("button", { class: "btn small ghost", type: "button", text: "Copy email text", onclick: function () { copy(emailBody(), copyBody); } });
+
+    function update() {
+      otherBox.hidden = role.value !== "__other";
+      fillSpan(pv.project, project.name, "project");
+      fillSpan(pv.role, roleText(), "your role");
+      pv.sig.textContent = name.value.trim();
+      fillSpan(pv.name, name.value.trim(), "your name");
+      fillSpan(pv.date, fmtDate(date.value), "date");
+      var to = fixed.concat(project.producerEmail ? [project.producerEmail] : []);
+      var seen = {}; to = to.filter(function (x) { var k = x.toLowerCase(); if (seen[k]) return false; seen[k] = 1; return true; });
+      recips.textContent = to.length ? "To: " + to.join(", ") : "No recipient emails are set yet.";
+      send.href = "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(to.join(",")) +
+        "&su=" + encodeURIComponent("No Due Certificate - " + name.value.trim() + " - " + project.name) +
+        "&body=" + encodeURIComponent(emailBody());
+    }
+    [name, role, other, date].forEach(function (el) { el.addEventListener("input", update); el.addEventListener("change", update); });
+    send.addEventListener("click", function (ev) {
+      err.textContent = ""; okMsg.textContent = "";
+      if (!name.value.trim()) { ev.preventDefault(); err.textContent = "Please type your name."; name.focus(); return; }
+      if (!roleText()) { ev.preventDefault(); err.textContent = "Please enter your role."; other.focus(); return; }
+      if (!date.value) { ev.preventDefault(); err.textContent = "Please choose the date."; return; }
+      okMsg.textContent = "Gmail is opening in a new tab. Press Send there to finish.";
+    });
+
+    var paper = h("div", { class: "paper", "aria-label": "Certificate preview" }, [
+      h("p", { class: "to" }, ["To", h("br"), "The Producer,", h("br"), "Tarang+ Originals", h("br"), "Odisha Television Ltd., Bhubaneswar"]),
+      h("p", { class: "sub", text: "Sub: No Due Certificate" }),
+      h("p", { text: "Sir," }),
+      h("p", null, ["I have received all my dues from the production house towards my remuneration for the " + typeWord + " ", pv.project, ". I have participated in this project in the capacity of ", pv.role, ". I confirm that I have no further financial or material claims pending regarding this production."]),
+      h("div", { class: "sigline" }, [
+        h("div", null, [h("span", { class: "k", text: "Signature: " }), pv.sig]),
+        h("div", null, [h("span", { class: "k", text: "Name: " }), pv.name]),
+        h("div", null, [h("span", { class: "k", text: "Date: " }), pv.date])
+      ])
+    ]);
+    app.appendChild(h("div", null, [h("div", { class: "eyebrow", text: "Tarang+ Originals" }), h("h1", { text: "No Due Certificate: " + project.name })]));
+    app.appendChild(h("section", { class: "card" }, [
+      h("h2", { text: "Your details" }),
+      h("div", { class: "grid" }, [fieldBox("Name (this is your signature)", name), fieldBox("Role in " + project.name, role), otherBox, fieldBox("Date", date)])
+    ]));
+    app.appendChild(paper);
+    app.appendChild(h("section", { class: "card sendbar" }, [recips, send, err, okMsg, h("div", null, [copyBody])]));
+    update();
+  }
+
+  function route() {
+    var c = /^#c-([A-Za-z2-7]+)$/i.exec(location.hash);
+    if (c) {
+      var pl = dec(c[1]);
+      if (pl && pl.n) return renderSigner(pl);
+      app.textContent = "";
+      app.appendChild(h("p", { class: "center-note", text: "This certificate link is not valid. Ask the producer for a new link." }));
+      return;
+    }
+    renderAdmin();
+  }
+  route();
+  window.addEventListener("hashchange", route);
+})();
+</script>
+</body>
+</html>
