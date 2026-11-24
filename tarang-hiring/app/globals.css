@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { --tred: #E8262C; --tblue: #0B4EA2; --tyellow: #F7D417; }
+
+body { @apply bg-tbg font-sans text-ink antialiased; }
+h1, h2, h3 { @apply font-heading; }
+
+@layer components {
+  .card { @apply rounded-xl border border-gray-200 bg-white p-4 sm:p-5; }
+  .label { @apply mb-1.5 block text-[15px] font-medium text-ink; }
+  .input { @apply w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-base text-ink placeholder:text-gray-400 focus:border-tred focus:outline-none focus:ring-2 focus:ring-tred/30; }
+  .err { @apply mt-1.5 text-sm text-tred; }
+  .hint { @apply mt-1 text-sm text-muted; }
+  .btn { @apply inline-flex items-center justify-center rounded-lg bg-tred px-5 py-2.5 font-semibold text-white transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-tred/40 disabled:cursor-not-allowed disabled:opacity-60; }
+  .btn-ghost { @apply inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-ink hover:bg-gray-50 disabled:opacity-50; }
+}
+
+.wave { height: 28px; background:
+  linear-gradient(var(--tblue), var(--tblue)) 0 0 / 100% 33.4% no-repeat,
+  linear-gradient(var(--tyellow), var(--tyellow)) 0 50% / 100% 33.4% no-repeat,
+  linear-gradient(var(--tred), var(--tred)) 0 100% / 100% 33.4% no-repeat;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
