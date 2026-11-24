@@ -83,7 +83,7 @@ td.num, th.num { font-variant-numeric: tabular-nums; }
 </head>
 <body>
 <main id="app"><p class="center-note">Loading…</p></main>
-<p class="hint" style="text-align:center;margin-top:24px">Page version 6 (Gmail app)</p>
+<p class="hint" style="text-align:center;margin-top:24px">Page version 7 (Gmail app)</p>
 <script>
 (function () {
   "use strict";
@@ -243,9 +243,9 @@ td.num, th.num { font-variant-numeric: tabular-nums; }
     var isAndroid = /Android/i.test(navigator.userAgent);
     var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
     var mailtoUrl = "", iosUrl = "";
-    var send = h("a", isMobile ? { class: "btn", text: "Send Now (opens Gmail app)" } : { class: "btn", target: "_blank", rel: "noopener", text: "Send Now (opens Gmail)" });
+    var send = h("a", isMobile ? { class: "btn", text: "Send Now (opens your email app)" } : { class: "btn", target: "_blank", rel: "noopener", text: "Send Now (opens Gmail)" });
     var recips = h("p", { class: "recips" });
-    var mailBtn = isMobile ? h("a", { class: "btn ghost", text: "Not opening? Use any mail app" }) : null;
+    var mailBtn = isAndroid ? h("a", { class: "btn ghost", text: "Alternative: open Gmail app directly" }) : null;
     var copyBody = h("button", { class: "btn small ghost", type: "button", text: "Copy email text", onclick: function () { copy(emailBody(), copyBody); } });
 
     function update() {
@@ -264,10 +264,8 @@ td.num, th.num { font-variant-numeric: tabular-nums; }
         var bodyText = emailBody();
         mailtoUrl = "mailto:" + to.join(",") + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(bodyText.replace(/\n/g, "\r\n"));
         iosUrl = "googlegmail:///co?to=" + encodeURIComponent(to.join(",")) + "&subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(bodyText);
-        if (mailBtn) mailBtn.href = mailtoUrl;
-        send.href = isAndroid
-          ? "intent:" + mailtoUrl.slice(7) + "#Intent;scheme=mailto;package=com.google.android.gm;action=android.intent.action.SENDTO;S.browser_fallback_url=" + encodeURIComponent(mailtoUrl) + ";end"
-          : mailtoUrl;
+        if (mailBtn) mailBtn.href = "intent:" + mailtoUrl.slice(7) + "#Intent;scheme=mailto;package=com.google.android.gm;action=android.intent.action.SENDTO;S.browser_fallback_url=" + encodeURIComponent(mailtoUrl) + ";end";
+        send.href = mailtoUrl;
       } else {
         send.href = "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(to.join(",")) +
           "&su=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(emailBody());
@@ -280,7 +278,7 @@ td.num, th.num { font-variant-numeric: tabular-nums; }
       if (!roleText()) { ev.preventDefault(); err.textContent = "Please enter your role."; other.focus(); return; }
       if (!date.value) { ev.preventDefault(); err.textContent = "Please choose the date."; return; }
       if (isIOS) { ev.preventDefault(); location.href = iosUrl; setTimeout(function () { if (!document.hidden) location.href = mailtoUrl; }, 1500); }
-      okMsg.textContent = isMobile ? "The Gmail app is opening. Press Send there to finish. If nothing opens, use Copy email text below." : "Gmail is opening in a new tab. Press Send there to finish.";
+      okMsg.textContent = isMobile ? "Your email app is opening. Press Send there to finish. If nothing opens, use Copy email text below." : "Gmail is opening in a new tab. Press Send there to finish.";
     });
 
     var paper = h("div", { class: "paper", "aria-label": "Certificate preview" }, [
