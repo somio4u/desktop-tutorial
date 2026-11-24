@@ -69,8 +69,11 @@ $$;
 
 -- The service role bypasses RLS. Anonymous users get NO policies (= no access).
 -- Logged-in admins can read; all writes go through the server API.
+drop policy if exists "admins read applicants" on public.applicants;
 create policy "admins read applicants" on public.applicants for select to authenticated using (public.is_admin());
+drop policy if exists "admins read notes" on public.applicant_notes;
 create policy "admins read notes" on public.applicant_notes for select to authenticated using (public.is_admin());
+drop policy if exists "admins read admins" on public.admins;
 create policy "admins read admins" on public.admins for select to authenticated using (public.is_admin());
 
 -- Private storage buckets
