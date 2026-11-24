@@ -83,7 +83,7 @@ td.num, th.num { font-variant-numeric: tabular-nums; }
 </head>
 <body>
 <main id="app"><p class="center-note">Loading…</p></main>
-<p class="hint" style="text-align:center;margin-top:24px">Page version 8 (Gmail app)</p>
+<p class="hint" style="text-align:center;margin-top:24px">Page version 9 (Gmail app)</p>
 <script>
 (function () {
   "use strict";
@@ -243,7 +243,7 @@ td.num, th.num { font-variant-numeric: tabular-nums; }
     var isAndroid = /Android/i.test(navigator.userAgent);
     var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
     var mailtoUrl = "", iosUrl = "";
-    var send = h("a", isMobile ? { class: "btn", text: "Send Now (opens your email app)" } : { class: "btn", target: "_blank", rel: "noopener", text: "Send Now (opens Gmail)" });
+    var send = h("a", isMobile ? { class: "btn", text: "Send Now" } : { class: "btn", target: "_blank", rel: "noopener", text: "Send Now" });
     var recips = h("p", { class: "recips" });
     var mailBtn = null;
     var copyBody = h("button", { class: "btn small ghost", type: "button", text: "Copy email text", onclick: function () { copy(emailBody(), copyBody); } });
