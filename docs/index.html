@@ -238,7 +238,8 @@ td.num, th.num { font-variant-numeric: tabular-nums; }
         "I have received all my dues from the production house towards my remuneration for the " + typeWord + " " + project.name + ". I have participated in this project in the capacity of " + roleText() + ". I confirm that I have no further financial or material claims pending regarding this production.",
         "", "Signature: " + name.value.trim(), "Name: " + name.value.trim(), "Date: " + fmtDate(date.value)].join("\n");
     }
-    var send = h("a", { class: "btn", target: "_blank", rel: "noopener", text: "Send Now (opens Gmail)" });
+    var isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && window.matchMedia("(pointer: coarse)").matches);
+    var send = h("a", isMobile ? { class: "btn", text: "Send Now (opens Gmail app)" } : { class: "btn", target: "_blank", rel: "noopener", text: "Send Now (opens Gmail)" });
     var recips = h("p", { class: "recips" });
     var copyBody = h("button", { class: "btn small ghost", type: "button", text: "Copy email text", onclick: function () { copy(emailBody(), copyBody); } });
 
@@ -252,9 +253,14 @@ td.num, th.num { font-variant-numeric: tabular-nums; }
       var to = fixed.concat(project.producerEmail ? [project.producerEmail] : []);
       var seen = {}; to = to.filter(function (x) { var k = x.toLowerCase(); if (seen[k]) return false; seen[k] = 1; return true; });
       recips.textContent = to.length ? "To: " + to.join(", ") : "No recipient emails are set yet.";
-      send.href = "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(to.join(",")) +
-        "&su=" + encodeURIComponent("No Due Certificate - " + name.value.trim() + " - " + project.name) +
-        "&body=" + encodeURIComponent(emailBody());
+      var subject = "No Due Certificate - " + name.value.trim() + " - " + project.name;
+      if (isMobile) {
+        /* Phones: Gmail's website drops the draft, so use a mail link that opens the Gmail (or default mail) app. */
+        send.href = "mailto:" + to.join(",") + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(emailBody().replace(/\n/g, "\r\n"));
+      } else {
+        send.href = "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(to.join(",")) +
+          "&su=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(emailBody());
+      }
     }
     [name, role, other, date].forEach(function (el) { el.addEventListener("input", update); el.addEventListener("change", update); });
     send.addEventListener("click", function (ev) {
@@ -262,7 +268,7 @@ td.num, th.num { font-variant-numeric: tabular-nums; }
       if (!name.value.trim()) { ev.preventDefault(); err.textContent = "Please type your name."; name.focus(); return; }
       if (!roleText()) { ev.preventDefault(); err.textContent = "Please enter your role."; other.focus(); return; }
       if (!date.value) { ev.preventDefault(); err.textContent = "Please choose the date."; return; }
-      okMsg.textContent = "Gmail is opening in a new tab. Press Send there to finish.";
+      okMsg.textContent = isMobile ? "Your email app is opening. Press Send there to finish. If nothing opens, use Copy email text below." : "Gmail is opening in a new tab. Press Send there to finish.";
     });
 
     var paper = h("div", { class: "paper", "aria-label": "Certificate preview" }, [
