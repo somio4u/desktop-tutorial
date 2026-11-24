@@ -239,6 +239,9 @@ td.num, th.num { font-variant-numeric: tabular-nums; }
         "", "Signature: " + name.value.trim(), "Name: " + name.value.trim(), "Date: " + fmtDate(date.value)].join("\n");
     }
     var isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && window.matchMedia("(pointer: coarse)").matches);
+    var isAndroid = /Android/i.test(navigator.userAgent);
+    var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+    var mailtoUrl = "", iosUrl = "";
     var send = h("a", isMobile ? { class: "btn", text: "Send Now (opens Gmail app)" } : { class: "btn", target: "_blank", rel: "noopener", text: "Send Now (opens Gmail)" });
     var recips = h("p", { class: "recips" });
     var copyBody = h("button", { class: "btn small ghost", type: "button", text: "Copy email text", onclick: function () { copy(emailBody(), copyBody); } });
@@ -256,7 +259,12 @@ td.num, th.num { font-variant-numeric: tabular-nums; }
       var subject = "No Due Certificate - " + name.value.trim() + " - " + project.name;
       if (isMobile) {
         /* Phones: Gmail's website drops the draft, so use a mail link that opens the Gmail (or default mail) app. */
-        send.href = "mailto:" + to.join(",") + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(emailBody().replace(/\n/g, "\r\n"));
+        var bodyText = emailBody();
+        mailtoUrl = "mailto:" + to.join(",") + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(bodyText.replace(/\n/g, "\r\n"));
+        iosUrl = "googlegmail:///co?to=" + encodeURIComponent(to.join(",")) + "&subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(bodyText);
+        send.href = isAndroid
+          ? "intent:" + to.join(",") + "#Intent;scheme=mailto;package=com.google.android.gm;action=android.intent.action.SENDTO;S.android.intent.extra.SUBJECT=" + encodeURIComponent(subject) + ";S.android.intent.extra.TEXT=" + encodeURIComponent(bodyText) + ";S.browser_fallback_url=" + encodeURIComponent(mailtoUrl) + ";end"
+          : mailtoUrl;
       } else {
         send.href = "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(to.join(",")) +
           "&su=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(emailBody());
@@ -268,7 +276,8 @@ td.num, th.num { font-variant-numeric: tabular-nums; }
       if (!name.value.trim()) { ev.preventDefault(); err.textContent = "Please type your name."; name.focus(); return; }
       if (!roleText()) { ev.preventDefault(); err.textContent = "Please enter your role."; other.focus(); return; }
       if (!date.value) { ev.preventDefault(); err.textContent = "Please choose the date."; return; }
-      okMsg.textContent = isMobile ? "Your email app is opening. Press Send there to finish. If nothing opens, use Copy email text below." : "Gmail is opening in a new tab. Press Send there to finish.";
+      if (isIOS) { ev.preventDefault(); location.href = iosUrl; setTimeout(function () { if (!document.hidden) location.href = mailtoUrl; }, 1500); }
+      okMsg.textContent = isMobile ? "The Gmail app is opening. Press Send there to finish. If nothing opens, use Copy email text below." : "Gmail is opening in a new tab. Press Send there to finish.";
     });
 
     var paper = h("div", { class: "paper", "aria-label": "Certificate preview" }, [
